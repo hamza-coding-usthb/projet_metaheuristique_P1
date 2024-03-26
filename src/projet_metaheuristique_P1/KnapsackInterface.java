@@ -22,8 +22,10 @@ public class KnapsackInterface extends JFrame {
     private JTextArea resultsArea;
     private List<Integer> weightsFromFile;
     private List<Integer> valuesFromFile;
+    private JTextField maxDepthField; // Added maxDepthField
 
-
+    
+    
     public KnapsackInterface() {
     	
     	
@@ -35,42 +37,60 @@ public class KnapsackInterface extends JFrame {
         JPanel leftPanel = new JPanel(new BorderLayout());
 
         // Upper Left Panel
-        JPanel upperLeftPanel = new JPanel(new GridLayout(4, 2));
+        JPanel upperLeftPanel = new JPanel();
+        upperLeftPanel.setLayout(new BoxLayout(upperLeftPanel, BoxLayout.Y_AXIS)); // Use BoxLayout with vertical orientation
         upperLeftPanel.setBorder(BorderFactory.createTitledBorder("Parameters"));
 
         JLabel algorithmLabel = new JLabel("Algorithm:");
         algorithmComboBox = new JComboBox<>(new String[]{"DFS", "BFS", "A*"});
+        JLabel maxDepthLabel = new JLabel("Max Depth:");
+        maxDepthField = new JTextField();
         JLabel numberOfSacksLabel = new JLabel("Number of Sacks:");
         numberOfSacksField = new JTextField();
-        JLabel capacityLabel = new JLabel("Capacity:");
-        capacityFields = new ArrayList<>();
+        
+        //JLabel capacityLabel = new JLabel("Capacity:");
+        
 
         upperLeftPanel.add(algorithmLabel);
         upperLeftPanel.add(algorithmComboBox);
+        upperLeftPanel.add(maxDepthLabel);
+        upperLeftPanel.add(maxDepthField);
         upperLeftPanel.add(numberOfSacksLabel);
         upperLeftPanel.add(numberOfSacksField);
+        //upperLeftPanel.add(capacityLabel);
+        
+        capacityFields = new ArrayList<>();
         
         // Add capacity fields dynamically based on the number of sacks
+        /*
         numberOfSacksField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 updateCapacityFields();
             }
         });
+        */
+        
+        /*
         upperLeftPanel.add(capacityLabel);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             JTextField capacityField = new JTextField();
             capacityFields.add(capacityField);
             upperLeftPanel.add(capacityField);
             capacityField.setVisible(false);
         }
-
-        leftPanel.add(upperLeftPanel, BorderLayout.NORTH);
-
+        */
+        
+        
+        JScrollPane parametersScrollPane = new JScrollPane(upperLeftPanel);
+        leftPanel.add(parametersScrollPane, BorderLayout.NORTH);
+        
+        
+        
         // Lower Left Panel
         JPanel lowerLeftPanel = new JPanel(new BorderLayout());
         lowerLeftPanel.setBorder(BorderFactory.createTitledBorder("Metrics"));
-        metricsArea = new JTextArea();
+        metricsArea = new JTextArea(10, 30); // Set preferred row and column sizes
         metricsArea.setEditable(false);
         lowerLeftPanel.add(new JScrollPane(metricsArea));
 
@@ -179,6 +199,19 @@ public class KnapsackInterface extends JFrame {
     	// Change text color
     	resultsArea.setForeground(Color.RED);
         String selectedAlgorithm = (String) algorithmComboBox.getSelectedItem();
+        int maxDepth = 100;
+        String maxDepthText = maxDepthField.getText();
+        if (!maxDepthText.isEmpty()) {
+            try {
+                maxDepth = Integer.parseInt(maxDepthText);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Max depth must be a valid integer.", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+        
+        
+        
         
         String numberOfSacksText = numberOfSacksField.getText();
         if (numberOfSacksText.isEmpty()) {
@@ -196,6 +229,7 @@ public class KnapsackInterface extends JFrame {
             JOptionPane.showMessageDialog(this, "Number of sacks must be a positive integer.", "Warning", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        /*
      // Check if the capacity fields are empty or contain invalid input
         for (int i = 0; i < numberOfSacks; i++) {
             JTextField capacityField = capacityFields.get(i);
@@ -217,21 +251,24 @@ public class KnapsackInterface extends JFrame {
                 return;
             }
         }
-
+*/
         // Prepare items
-        int[] weights = {5, 10, 30}; // Example weights
+        int[] weights = {10, 10, 30}; // Example weights
         int[] values = {60, 100, 120}; // Example values
         List<MultipleKnapsack.Item> items = new ArrayList<>();
         for (int i = 0; i < weights.length; i++) {
             items.add(new MultipleKnapsack.Item(weights[i], values[i]));
         }
+        List<MultipleKnapsackBFS.Item> itemsBFS = new ArrayList<>();
+        for (int i = 0; i < weights.length; i++) {
+            itemsBFS.add(new MultipleKnapsackBFS.Item(weights[i], values[i]));
+        }
 
         // Retrieve capacities
-        List<Integer> capacities = new ArrayList<>();
-        for (int i = 0; i < numberOfSacks; i++) {
-            JTextField capacityField = capacityFields.get(i);
-            int capacity = Integer.parseInt(capacityField.getText());
-            capacities.add(capacity);
+        List<Integer> capacities = updateCapacityFields();
+        if (capacities == null || capacities.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter capacities for all sacks.", "Warning", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
         // Call the appropriate algorithm method
@@ -244,7 +281,7 @@ public class KnapsackInterface extends JFrame {
 			// Call the dfs algorithm method
             	resultsArea.append("DFS Algorithm Results(All Nodes):\n\n");
             	long startTime = System.currentTimeMillis();
-                MultipleKnapsack.dfs(capacities, items, resultsArea, metricsArea);
+                MultipleKnapsack.dfs(capacities, items, resultsArea, metricsArea, maxDepth);
                 long endTime = System.currentTimeMillis();
                 long durationMillis = endTime - startTime;
 
@@ -254,7 +291,18 @@ public class KnapsackInterface extends JFrame {
                 
                 break;
             case "BFS":
-                // Call BFS algorithm method
+                
+            	// Call the dfs algorithm method
+            	resultsArea.append("DFS Algorithm Results(All Nodes):\n\n");
+            	long startTimeBFS = System.currentTimeMillis();
+                MultipleKnapsackBFS.bfs(capacities, itemsBFS, resultsArea, metricsArea, maxDepth);
+                long endTimeBFS = System.currentTimeMillis();
+                long durationMillisBFS = endTimeBFS - startTimeBFS;
+
+             // Convert to seconds
+                double durationSecondsBFS = durationMillisBFS / 1000.0;
+                metricsArea.append("DFS Algorithm Duration: " + durationMillisBFS + " milliseconds (" + durationSecondsBFS + " seconds)\n");
+                
                 break;
             case "A*":
                 // Call A* algorithm method
@@ -265,14 +313,19 @@ public class KnapsackInterface extends JFrame {
         // metricsArea.setText("Metrics: ...");
     }
 
-    private void updateCapacityFields() {
+    private List<Integer> updateCapacityFields() {
         // Update the number of capacity fields based on the selected number of sacks
         int numberOfSacks = Integer.parseInt(numberOfSacksField.getText());
-        for (int i = 0; i < capacityFields.size(); i++) {
-            JTextField capacityField = capacityFields.get(i);
-            capacityField.setVisible(i < numberOfSacks);
-        }
+        CapacityInputDialog dialog = new CapacityInputDialog(this, numberOfSacks);
+        dialog.setVisible(true); // Display the dialog window
+        List<Integer> capacities = dialog.getCapacities();
+        
+        // Use the capacities obtained from the dialog
+        
+        return capacities;
     }
+
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {

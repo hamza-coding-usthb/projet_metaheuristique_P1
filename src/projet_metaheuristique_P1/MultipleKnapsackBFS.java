@@ -3,10 +3,11 @@ package projet_metaheuristique_P1;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Stack;
+import java.util.Queue;
+import java.util.LinkedList;
 import javax.swing.JTextArea;
 
-public class MultipleKnapsack {
+public class MultipleKnapsackBFS {
 
     static class Item {
         int weight;
@@ -27,13 +28,11 @@ public class MultipleKnapsack {
         List<List<Item>> sacks;
         int totalWeight;
         int itemIndex;
-        List<State> children; // Add a list to hold child states
 
         public State(List<List<Item>> sacks, int totalWeight, int itemIndex) {
             this.sacks = sacks;
             this.totalWeight = totalWeight;
             this.itemIndex = itemIndex;
-            this.children = new ArrayList<>(); // Initialize the list
         }
 
         public int getTotalValue() {
@@ -43,20 +42,9 @@ public class MultipleKnapsack {
             }
             return totalValue;
         }
-
-        // Method to add child states
-        public void addChild(State child) {
-            children.add(child);
-        }
-
-        // Method to retrieve child states
-        public List<State> getChildren() {
-            return children;
-        }
     }
 
-
-    public static void dfs(List<Integer> capacities, List<Item> items, JTextArea resultsArea, JTextArea metricsArea, int maximumDepth) {
+    public static void bfs(List<Integer> capacities, List<Item> items, JTextArea resultsArea, JTextArea metricsArea, int maximumDepth) {
 
         int numSacks = capacities.size();
         boolean insufficientCapacity = false;
@@ -69,19 +57,19 @@ public class MultipleKnapsack {
             resultsArea.append("Total capacity of the sacks is insufficient to carry all the items.\n");
         }
 
-        Stack<State> stack = new Stack<>();
+        Queue<State> queue = new LinkedList<>(); // Change to Queue
         List<List<Item>> initialSacks = new ArrayList<>();
         for (int i = 0; i < numSacks; i++) {
             initialSacks.add(new ArrayList<>());
         }
-        stack.push(new State(initialSacks, 0, 0));
+        queue.offer(new State(initialSacks, 0, 0)); // Change to offer
 
         int j = 0;
         int maxDepth = 0; // Initialize max depth
         List<State> allSacks = new ArrayList<>();
 
-        while (!stack.isEmpty()) {
-            State state = stack.pop();
+        while (!queue.isEmpty()) {
+            State state = queue.poll(); // Change to poll
             j++;
 
             List<List<Item>> sacks = state.sacks;
@@ -93,9 +81,9 @@ public class MultipleKnapsack {
             maxDepth = Math.max(maxDepth, itemIndex);
             
             if(maxDepth>maximumDepth) {
-            	maximumDepthReached = true;
-            	resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
-            	break;
+                maximumDepthReached = true;
+                resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
+                break;
             }
 
             int totalValue = 0;
@@ -128,7 +116,7 @@ public class MultipleKnapsack {
                 if (canFit(capacities.get(i), sacks.get(i), items.get(itemIndex))) {
                     List<List<Item>> newSacks = copySacks(sacks);
                     newSacks.get(i).add(items.get(itemIndex));
-                    stack.push(new State(newSacks, totalWeight + items.get(itemIndex).weight, itemIndex + 1));
+                    queue.offer(new State(newSacks, totalWeight + items.get(itemIndex).weight, itemIndex + 1)); // Change to offer
                     canFitAnySack = true;
                 }
             }
@@ -215,13 +203,16 @@ public class MultipleKnapsack {
     private static void printSacks(List<List<Item>> sacks, JTextArea resultsArea) {
         resultsArea.append("Sacks: Optimum Result\n");
         int sackNumber = 1;
-        int totalValue = 0; // Initialize totalValue
+        int totalValue = 0;
+        // Initialize totalValue
         for (List<Item> sack : sacks) {
             resultsArea.append("Sack " + sackNumber + " " + sack.toString() + "\n");
-            totalValue += calculateTotalValue(sack); // Accumulate totalValue
+            totalValue += calculateTotalValue(sack);
             sackNumber++;
         }
 
         resultsArea.append("Total Value: " + totalValue + "\n\n");
     }
 }
+
+
