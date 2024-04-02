@@ -1,33 +1,58 @@
 package projet_metaheuristique_P1;
 
 import javax.swing.*;
+
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import java.awt.*;
+import org.graphstream.graph.Graph;
+import org.graphstream.graph.implementations.SingleGraph;
+import org.graphstream.ui.view.View;
+import org.graphstream.ui.view.Viewer;
+
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import javax.swing.JFileChooser;
+
 import java.awt.event.ActionEvent;
+
+
+
+import java.awt.*;
+
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
+
 import java.io.BufferedReader;
+
+
+
 
 public class KnapsackInterface extends JFrame {
     private static final long serialVersionUID = 1L;
+    private List<List<Integer>> allWeightsFromFile;
+    private List<List<Integer>> allValuesFromFile;
     private JComboBox<String> algorithmComboBox;
     private JTextField numberOfSacksField;
-    private List<JTextField> capacityFields;
+    
     private JTextArea metricsArea;
     private JTextArea resultsArea;
-    private List<Integer> weightsFromFile;
-    private List<Integer> valuesFromFile;
+    
     private JTextField maxDepthField; // Added maxDepthField
-
+    
+    
+    
+    
     
     
     public KnapsackInterface() {
-    	
+    	allWeightsFromFile = new ArrayList<>();
+        allValuesFromFile = new ArrayList<>();
+        
     	
         setTitle("Knapsack Solver");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -59,7 +84,7 @@ public class KnapsackInterface extends JFrame {
         upperLeftPanel.add(numberOfSacksField);
         //upperLeftPanel.add(capacityLabel);
         
-        capacityFields = new ArrayList<>();
+        
         
         // Add capacity fields dynamically based on the number of sacks
         /*
@@ -124,25 +149,57 @@ public class KnapsackInterface extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Handle opening file explorer here
                 JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setCurrentDirectory(new File("C:\\Users\\Asus\\eclipse-workspace\\projet_metaheuristique_P1"));
                 FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV Files", "csv");
                 fileChooser.setFileFilter(filter);
+                fileChooser.setMultiSelectionEnabled(true); // Allow multiple file selection
                 int returnValue = fileChooser.showOpenDialog(null);
                 if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    // Load and validate the CSV file
-                    boolean valid = loadAndValidateCSV(selectedFile);
-                    if (valid) {
-                        // If CSV file is valid, display success message or perform any other action
-                        JOptionPane.showMessageDialog(null, "CSV file loaded successfully!");
-                    } else {
-                        // If CSV file is invalid, display error message or perform any other action
-                        JOptionPane.showMessageDialog(null, "Invalid CSV file format!");
+                    File[] selectedFiles = fileChooser.getSelectedFiles(); // Get all selected files
+                    
+                    // Sort the selected files based on their numerical order
+                    Arrays.sort(selectedFiles, new Comparator<File>() {
+                        @Override
+                        public int compare(File file1, File file2) {
+                            int number1 = extractNumber(file1.getName());
+                            int number2 = extractNumber(file2.getName());
+                            return Integer.compare(number1, number2);
+                        }
+
+                        private int extractNumber(String name) {
+                        	String[] parts = name.substring(0, name.lastIndexOf('.')).split("_");
+                            return Integer.parseInt(parts[1]);
+                            
+                        }
+                    });
+
+                    // Load and validate each selected CSV file in the order they were selected
+                    for (File selectedFile : selectedFiles) {
+                        boolean valid = loadAndValidateCSV(selectedFile);
+                        if (valid) {
+                            // If CSV file is valid, display success message or perform any other action
+                            JOptionPane.showMessageDialog(null, "CSV file " + selectedFile.getName() + " loaded successfully!");
+                        } else {
+                            // If CSV file is invalid, display error message or perform any other action
+                            JOptionPane.showMessageDialog(null, "Invalid CSV file format: " + selectedFile.getName());
+                        }
                     }
                 }
             }
+
+        });
+        
+        JButton generateCSVButton = new JButton("Generate CSV");
+        generateCSVButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                openGenerateCSVWindow();
+            }
         });
         buttonPanel.add(openButton);
+        buttonPanel.add(generateCSVButton);
         buttonPanel.add(clearButton);
+        
         // Run Algorithm Button (unchanged)
         JButton runButton = new JButton("Run Algorithm");
         runButton.addActionListener(new ActionListener() {
@@ -164,10 +221,25 @@ public class KnapsackInterface extends JFrame {
         resultsArea.setText("");
         metricsArea.setText("");
     }
+    
+    private void openGenerateCSVWindow() {
+        GenerateCSVDialog dialog = new GenerateCSVDialog(this);
+        dialog.setVisible(true);
+        int numberOfFiles = dialog.getNumberOfFiles();
+        int numberOfItems = dialog.getNumberOfItems();
+        int Incrementation = dialog.getIncrement();
+        int maxWeight = dialog.getMaxWeight();
+        int minWeight = dialog.getMinWeight();
+        int maxValue = dialog.getMaxValue();
+        if (numberOfItems != -1 && maxWeight != -1 && maxValue != -1 && numberOfFiles != -1 && Incrementation != -1) {
+            CSVGenerator.generateCSV("sample",numberOfItems, maxWeight, minWeight,maxValue, numberOfFiles, Incrementation);
+        }
+    }
+
 
     private boolean loadAndValidateCSV(File file) {
-        weightsFromFile = new ArrayList<>();
-        valuesFromFile = new ArrayList<>();
+        List<Integer> weightsFromFile = new ArrayList<>();
+        List<Integer> valuesFromFile = new ArrayList<>();
         
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
@@ -185,6 +257,9 @@ public class KnapsackInterface extends JFrame {
                     return false; // Unable to parse weight or value
                 }
             }
+            // Add loaded data to the lists
+            allWeightsFromFile.add(weightsFromFile);
+            allValuesFromFile.add(valuesFromFile);
             return true; // CSV file is valid
         } catch (IOException e) {
             e.printStackTrace();
@@ -193,13 +268,17 @@ public class KnapsackInterface extends JFrame {
     }
 
     private void runAlgorithm() {
+    	if (allWeightsFromFile == null || allWeightsFromFile.isEmpty() || allValuesFromFile == null || allValuesFromFile.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please choose a CSV file before running the algorithm.", "Warning", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
     	Font font = new Font("Arial", Font.BOLD, 16); // Example: Arial, bold, size 16
     	resultsArea.setFont(font);
 
     	// Change text color
     	resultsArea.setForeground(Color.RED);
         String selectedAlgorithm = (String) algorithmComboBox.getSelectedItem();
-        int maxDepth = 100;
+        int maxDepth = 1000;
         String maxDepthText = maxDepthField.getText();
         if (!maxDepthText.isEmpty()) {
             try {
@@ -253,16 +332,29 @@ public class KnapsackInterface extends JFrame {
         }
 */
         // Prepare items
-        int[] weights = {10, 10, 30}; // Example weights
-        int[] values = {60, 100, 120}; // Example values
-        List<MultipleKnapsack.Item> items = new ArrayList<>();
-        for (int i = 0; i < weights.length; i++) {
-            items.add(new MultipleKnapsack.Item(weights[i], values[i]));
-        }
+        
+        
+       /*      
+       
         List<MultipleKnapsackBFS.Item> itemsBFS = new ArrayList<>();
+        for(int i=0; i<weightsFromFile.size(); i++) {
+        	itemsBFS.add(new MultipleKnapsackBFS.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+        }
+       
         for (int i = 0; i < weights.length; i++) {
             itemsBFS.add(new MultipleKnapsackBFS.Item(weights[i], values[i]));
         }
+       
+        List<AStarAlgo.Item> itemsAStar = new ArrayList<>();
+        for(int i=0; i<weightsFromFile.size(); i++) {
+        	itemsAStar.add(new AStarAlgo.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+        }
+       
+        for (int i = 0; i < weights.length; i++) {
+        	itemsAStar.add(new AStarAlgo.Item(weights[i], values[i]));
+        }
+        
+        */
 
         // Retrieve capacities
         List<Integer> capacities = updateCapacityFields();
@@ -275,38 +367,98 @@ public class KnapsackInterface extends JFrame {
         
         switch (selectedAlgorithm) {
             case "DFS":
+            	 
+            	DataSaved data = new DataSaved();
+            	Graph graph1 = new SingleGraph("Search Tree");
             	
-                
             	
 			// Call the dfs algorithm method
-            	resultsArea.append("DFS Algorithm Results(All Nodes):\n\n");
-            	long startTime = System.currentTimeMillis();
-                MultipleKnapsack.dfs(capacities, items, resultsArea, metricsArea, maxDepth);
-                long endTime = System.currentTimeMillis();
-                long durationMillis = endTime - startTime;
+            	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
+            	    List<Integer> weightsFromFile = allWeightsFromFile.get(fileIndex);
+            	    
+            	    List<Integer> valuesFromFile = allValuesFromFile.get(fileIndex);
+            	    
+            	    List<MultipleKnapsack.Item> items = new ArrayList<>();
 
+            	    // Iterate over the data of the current file and add items
+            	    for (int i = 0; i < weightsFromFile.size(); i++) {
+            	        items.add(new MultipleKnapsack.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+            	    }
+            	   
+            	   data = MultipleKnapsack.dfs(capacities, items, resultsArea, metricsArea, maxDepth, graph1);
+            	   if(fileIndex !=0) {
+            	   DataSaved.saveDataToCSV(data, "DFSData.csv");
+            	   }
+            	   
+            	}
+            	data.saveToCSV("DFSData.csv", "DFSMetrics.csv");
+            	StatCurve.generateCurve("DFSData.csv", "DFSMetrics.csv");
+            	
+            	
+            	
+                
+               
              // Convert to seconds
-                double durationSeconds = durationMillis / 1000.0;
-                metricsArea.append("DFS Algorithm Duration: " + durationMillis + " milliseconds (" + durationSeconds + " seconds)\n");
+                
+                //graph1.setAutoCreate(true);
+                //displayGraph(graph1);
                 
                 break;
             case "BFS":
-                
+            	DataSaved dataDFS = new DataSaved();
+            	Graph graph2 = new SingleGraph("Search Tree");
             	// Call the dfs algorithm method
-            	resultsArea.append("DFS Algorithm Results(All Nodes):\n\n");
-            	long startTimeBFS = System.currentTimeMillis();
-                MultipleKnapsackBFS.bfs(capacities, itemsBFS, resultsArea, metricsArea, maxDepth);
-                long endTimeBFS = System.currentTimeMillis();
-                long durationMillisBFS = endTimeBFS - startTimeBFS;
+            	resultsArea.append("BFS Algorithm Results(All Nodes):\n\n");
+            	
+            	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
+            	    List<Integer> weightsFromFile = allWeightsFromFile.get(fileIndex);
+            	    
+            	    List<Integer> valuesFromFile = allValuesFromFile.get(fileIndex);
+            	    
+            	    List<MultipleKnapsackBFS.Item> itemsBFS = new ArrayList<>();
+
+            	    // Iterate over the data of the current file and add items
+            	    for (int i = 0; i < weightsFromFile.size(); i++) {
+            	        itemsBFS.add(new MultipleKnapsackBFS.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+            	    }
+            	   dataDFS = MultipleKnapsackBFS.bfs(capacities, itemsBFS, resultsArea, metricsArea, maxDepth, graph2);
+             	   DataSaved.saveDataToCSV(dataDFS, "BFSData.csv");
+             	   dataDFS.saveToCSV("BFSData.csv", "BFSmetrics.csv");
+             	}
+            	
+            	
+            	                
 
              // Convert to seconds
-                double durationSecondsBFS = durationMillisBFS / 1000.0;
-                metricsArea.append("DFS Algorithm Duration: " + durationMillisBFS + " milliseconds (" + durationSecondsBFS + " seconds)\n");
+                
+                graph2.setAutoCreate(true);
+                displayGraph(graph2);
                 
                 break;
             case "A*":
                 // Call A* algorithm method
+            	DataSaved dataASTAR = new DataSaved();
+            	Graph graph3 = new SingleGraph("Search Tree");
+            	resultsArea.append("ASTAR Algorithm Results(All Nodes):\n\n");
+            	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
+            	    List<Integer> weightsFromFile = allWeightsFromFile.get(fileIndex);
+            	    
+            	    List<Integer> valuesFromFile = allValuesFromFile.get(fileIndex);
+            	    
+            	    List<AStarAlgo.Item> itemsASTAR = new ArrayList<>();
+
+            	    // Iterate over the data of the current file and add items
+            	    for (int i = 0; i < weightsFromFile.size(); i++) {
+            	    	itemsASTAR.add(new AStarAlgo.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+            	    }
+            	   dataASTAR = AStarAlgo.aStar(capacities, itemsASTAR, resultsArea, metricsArea, maxDepth, graph3);
+             	   DataSaved.saveDataToCSV(dataASTAR, "ASTARData.csv");
+             	  dataASTAR.saveToCSV("ASTARData.csv", "ASTARmetrics.csv");
+             	}                
+                graph3.setAutoCreate(true);
+                displayGraph(graph3);
                 break;
+                
         }
 
         // Update metrics (if any)
@@ -324,10 +476,39 @@ public class KnapsackInterface extends JFrame {
         
         return capacities;
     }
+    private static void displayGraph(Graph graph) {
+        // Set the layout algorithm to a tree layout algorithm
+        graph.setAttribute("layout.algorithm", "tree");
+
+        // Create a JFrame for the graph viewer
+        JFrame frame = new JFrame("Search Tree Visualization");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(800, 600);
+
+        // Create a Viewer for the graph
+        Viewer viewer = new Viewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
+        View view = viewer.addDefaultView(false);
+        
+        // Add the view to the frame
+        frame.getContentPane().add((Component) view);
+
+        // Enable auto layout
+        viewer.enableAutoLayout();
+
+        // Make the frame visible
+        frame.setVisible(true);
+    }
+
+    
+
+        // Update the graph layout
+       
+
 
 
 
     public static void main(String[] args) {
+    	
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {

@@ -7,32 +7,64 @@ import java.util.Queue;
 import java.util.LinkedList;
 import javax.swing.JTextArea;
 
+
+import java.time.Duration; // Import Duration for time tracking
+import java.time.Instant;
+import org.graphstream.graph.Node;
+
+
+
+import org.graphstream.graph.Graph;
+
+
+
 public class MultipleKnapsackBFS {
 
-    static class Item {
-        int weight;
-        int value;
+	static class Item {
+	    private static int itemCount = 0; // Static counter to generate unique identifiers
+	    private int id;
+	    private int weight;
+	    private int value;
 
-        public Item(int weight, int value) {
-            this.weight = weight;
-            this.value = value;
-        }
+	    public Item(int weight, int value) {
+	        this.id = itemCount++; // Assign unique identifier and then increment the counter
+	        this.weight = weight;
+	        this.value = value;
+	    }
 
-        @Override
-        public String toString() {
-            return "(" + weight + ", " + value + ")";
-        }
-    }
+	    public int getId() {
+	        return id;
+	    }
+
+	    @Override
+	    public String toString() {
+	        return "(" + id + ", " + weight + ", " + value + ")";
+	    }
+	    public static void resetItemCount() {
+	        itemCount = 0;
+	    }
+	}
+
 
     static class State {
+    	static int stateCount = 0;
         List<List<Item>> sacks;
+        int id;
         int totalWeight;
         int itemIndex;
+        int nodeNumber;
+        boolean visited;
+        Duration visitDuration; // Add timestamp field
+        List<State> children; // Add a list to hold child states
 
         public State(List<List<Item>> sacks, int totalWeight, int itemIndex) {
             this.sacks = sacks;
+            this.id = stateCount++;
             this.totalWeight = totalWeight;
             this.itemIndex = itemIndex;
+            this.children = new ArrayList<>(); // Initialize the list
+            this.visited = false;
+            this.visitDuration = null; // Initialize visit duration
         }
 
         public int getTotalValue() {
@@ -42,17 +74,73 @@ public class MultipleKnapsackBFS {
             }
             return totalValue;
         }
+
+        // Method to add child states
+        public void addChild(State child) {
+            children.add(child);
+        }
+
+        // Method to retrieve child states
+        public List<State> getChildren() {
+            return children;
+        }
+        public int getId() {
+            return id;
+        }
+        public int getNodeNumber() {
+            return nodeNumber;
+        }
+        public void setVisited(boolean bol) {
+        	this.visited = bol;
+        }
+        public boolean getVisited() {
+        	return visited;
+        }
+        public void setVisitDuration(Duration visitDuration) {
+            this.visitDuration = visitDuration;
+        }
+
+        // Method to get visit duration
+        public Duration getVisitDuration() {
+            return visitDuration;
+        }
+        public boolean containsItem(int itemId) {
+            for (List<Item> sack : sacks) {
+                for (Item item : sack) {
+                    if (item.getId() == itemId) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        public String getItemsAsString() {
+            StringBuilder sb = new StringBuilder();
+            for (List<Item> sack : sacks) {
+                sb.append("[");
+                for (Item item : sack) {
+                    sb.append(item.toString()).append(", ");
+                }
+                sb.append("], ");
+            }
+            return sb.toString();
+        }
     }
 
-    public static void bfs(List<Integer> capacities, List<Item> items, JTextArea resultsArea, JTextArea metricsArea, int maximumDepth) {
+
+    public static DataSaved bfs(List<Integer> capacities, List<Item> items, JTextArea resultsArea, JTextArea metricsArea, int maximumDepth, Graph graph) {
 
         int numSacks = capacities.size();
+        int numItems = items.size();
+        DataSaved data = new DataSaved();
         boolean insufficientCapacity = false;
         boolean maximumDepthReached = false;
+        boolean targetValueReached = false;
         int totalWeightOfItems = calculateTotalWeightOfItems(items);
         int totalCapacityOfSacks = calculateTotalCapacityOfSacks(capacities);
         insufficientCapacity = totalWeightOfItems > totalCapacityOfSacks;
-
+        
+        int targetVal = calculateMaxVal(items);
         if (insufficientCapacity) {
             resultsArea.append("Total capacity of the sacks is insufficient to carry all the items.\n");
         }
@@ -66,27 +154,41 @@ public class MultipleKnapsackBFS {
 
         int j = 0;
         int maxDepth = 0; // Initialize max depth
+        List<State> allStates = new ArrayList<>();
         List<State> allSacks = new ArrayList<>();
-
-        while (!queue.isEmpty()) {
+        long startTime = System.currentTimeMillis(); //measure time begins
+        Instant startingTime = Instant.now();
+        while (!queue.isEmpty() && j<= 65000) {
             State state = queue.poll(); // Change to poll
-            j++;
+            
+            Instant stateStartTime = Instant.now();
+            
+            Duration visitDuration = Duration.between(startingTime, stateStartTime);
+            
+            state.setVisitDuration(visitDuration); // Set visit duration
+            
+            allStates.add(state);
+            
 
             List<List<Item>> sacks = state.sacks;
-
+            
             int totalWeight = state.totalWeight;
             int itemIndex = state.itemIndex;
-
+            
+            targetValueReached = targetVal <= calculateCurrentVal(sacks);
+            
             // Update max depth
             maxDepth = Math.max(maxDepth, itemIndex);
             
-            if(maxDepth>maximumDepth) {
-                maximumDepthReached = true;
-                resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
-                break;
+            maximumDepthReached = itemIndex > maximumDepth;
+            
+            if(maximumDepthReached) {
+            	
+            	continue;
             }
 
             int totalValue = 0;
+            /*
             if (itemIndex < items.size()) {
                 resultsArea.append("Sacks:\n");
                 int sackNumber = 1;
@@ -98,7 +200,30 @@ public class MultipleKnapsackBFS {
 
                 resultsArea.append("Total Value: " + totalValue + "\n\n");
             }
-            allSacks.add(new State(sacks, totalWeight, itemIndex));
+            */
+            
+            
+            state.nodeNumber = j;
+            state.setVisited(true);
+            j++;
+            
+            if(targetValueReached) {
+            	resultsArea.append("Sacks When Target Reached:\n");
+                int sackNumber = 1;
+                for (List<Item> sack : sacks) {
+                    resultsArea.append("Sack " + sackNumber + " " + sack.toString() + "\n");
+                    totalValue += calculateTotalValue(sack);
+                    sackNumber++;
+                }
+                resultsArea.append("Total Value: " + totalValue + "\n\n");
+            	
+            	break;
+            }
+            
+            State newSack = new State(sacks, totalWeight, itemIndex);
+            newSack.setVisitDuration(visitDuration);
+            allSacks.add(newSack);
+            
 
             if (!insufficientCapacity) {
 
@@ -110,27 +235,89 @@ public class MultipleKnapsackBFS {
                     continue;
                 }
             }
-
-            boolean canFitAnySack = false;
+            
+          
+            
             for (int i = 0; i < numSacks; i++) {
-                if (canFit(capacities.get(i), sacks.get(i), items.get(itemIndex))) {
+            	List<List<Item>> parentSacks = copySacks(sacks);
+                totalWeight = state.totalWeight;
+            	
+            	for (int j1 = 0; j1 < numItems; j1++) {
+            	
+                if (canFit(capacities.get(i), parentSacks.get(i), items.get(j1)) && !state.containsItem(j1)) {
                     List<List<Item>> newSacks = copySacks(sacks);
-                    newSacks.get(i).add(items.get(itemIndex));
-                    queue.offer(new State(newSacks, totalWeight + items.get(itemIndex).weight, itemIndex + 1)); // Change to offer
-                    canFitAnySack = true;
+                    newSacks.get(i).add(items.get(j1));
+                    totalWeight += items.get(j1).weight;
+                    
+                        State childState = new State(newSacks, totalWeight, itemIndex + 1);
+                         // Add child to the parent's children list
+                        if(!isSimilarState(childState, allSacks)) {
+                            state.addChild(childState);
+                            queue.offer(childState);
+                            }
+                        // Enqueue the child state instead of pushing to stack
+                        
+                    
                 }
             }
+            }
+            
             allSacks.sort(Comparator.comparingInt(State::getTotalValue).reversed());
 
         }
-        if (insufficientCapacity || maximumDepthReached) {
-
+        
+        Item.resetItemCount();
+        long endTime = System.currentTimeMillis();
+        long durationMillis = endTime - startTime;
+        double durationSeconds = durationMillis / 1000.0;
+        metricsArea.append("BFS Algorithm Duration: " + durationMillis + " milliseconds (" + durationSeconds + " seconds)\n");
+        
+        
+        
+        if (insufficientCapacity || maximumDepthReached || ((maxDepth < numItems)&&(queue.isEmpty()))) {
+        	if(maximumDepthReached) {
+        		resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
+        	} else if(insufficientCapacity || ((maxDepth < numItems)&&(queue.isEmpty()))) {
+        		resultsArea.append("Best result possible: \n");
+        	}
             bestState(allSacks, resultsArea);
         }
+     // Build the graph based on the parent-child relationships
+        for (State parentState : allStates) {
+            for (State childState : parentState.getChildren()) {    	
+                // Add nodes if they don't exist already
+                if (graph.getNode("Node_" + parentState.getId()) == null) {
+                    Node parentNode = graph.addNode("Node_" + parentState.getId());
+                    // Set the label for the parent node with the total value
+                    parentNode.setAttribute("label", "Depth: " + parentState.itemIndex + "\nTotal Value: " + parentState.getTotalValue());
+                }
+                if(childState.getVisited()) {
+                if (graph.getNode("Node_" + childState.getId()) == null) {
+                    Node childNode = graph.addNode("Node_" + childState.getId());
+                    // Set the label for the child node with the total value
+                    childNode.setAttribute("label", "Depth: " + childState.itemIndex + "\nTotal Value: " + childState.getTotalValue());
+                }
+            }
+                if(childState.getVisited()) {
+                // Add edges between parent and child states
+                graph.addEdge("Edge_" + parentState.getId() + "_" + childState.getId(),
+                              "Node_" + parentState.getId(),
+                              "Node_" + childState.getId());
+                }
+            }
+        }
+        graph.setAttribute("layout.algorithm", "tree");
+        
+        DotFileGeneratorBFS.generateDotFile(allStates);
 
         metricsArea.append("The number of nodes in the search tree: " + j + "\n");
         metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
+        data.setnumItems(numItems);
+        data.setDuration(durationSeconds);
+        data.setMaximumDepth(maxDepth);
+        data.setNodesTraversed(j);
         
+        return(data);
         
 
     }
@@ -138,14 +325,19 @@ public class MultipleKnapsackBFS {
     private static void bestState(List<State> allSacks, JTextArea resultsArea) {
         if (!allSacks.isEmpty()) {
             State firstState = allSacks.get(0);
+            System.out.println("TWO " + firstState.getVisitDuration());
             resultsArea.append("Best:\n");
             int totalValueFirstState = 0;
+            Duration visitDuration = firstState.getVisitDuration();
+
+         // Convert duration to string and remove the "PT" prefix
+            	String dur = visitDuration.toString().substring(2);
             for (int i = 0; i < firstState.sacks.size(); i++) {
                 List<Item> sack = firstState.sacks.get(i);
                 resultsArea.append("Sack " + (i + 1) + ": " + sack.toString() + "\n");
                 totalValueFirstState += calculateTotalValue(sack);
             }
-            resultsArea.append("Total value of the first state: " + totalValueFirstState + "\n");
+            resultsArea.append("Total value of the first state: " + totalValueFirstState + " Duration to reach this state: "+ dur +"\n");
         } else {
             resultsArea.append("The allSacks list is empty.\n");
         }
@@ -212,6 +404,67 @@ public class MultipleKnapsackBFS {
         }
 
         resultsArea.append("Total Value: " + totalValue + "\n\n");
+    }
+    private static int calculateMaxVal(List<Item> items) {
+    	int maxVal = 0;
+    	for(Item item: items) {
+    		maxVal += item.value;
+    	}
+    	return maxVal;
+    }
+    private static int calculateCurrentVal(List<List<Item>> sacks) {
+    	int currentValue = 0;
+    	for (List<Item> sack : sacks) {
+            
+    		currentValue += calculateTotalValue(sack);
+            
+        }
+    	return currentValue;
+    }
+    public static boolean isSimilarState(State childState, List<State> allStates) {
+        for (State state : allStates) {
+            if (areStatesSimilar(childState, state)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean areStatesSimilar(State state1, State state2) {
+        List<List<Item>> sacks1 = state1.sacks;
+        List<List<Item>> sacks2 = state2.sacks;
+
+        // Check if the number of sacks is the same
+        if (sacks1.size() != sacks2.size()) {
+            return false;
+        }
+
+        // Check if each sack in state1 has a corresponding similar sack in state2
+        for (int i = 0; i < sacks1.size(); i++) {
+            List<Item> sack1 = sacks1.get(i);
+            List<Item> sack2 = sacks2.get(i);
+
+            // Check if the number of items in the sacks is the same
+            if (sack1.size() != sack2.size()) {
+                return false;
+            }
+
+            // Check if each item in sack1 has a corresponding similar item in sack2
+            for (Item item : sack1) {
+                boolean foundSimilarItem = false;
+                for (Item item2 : sack2) {
+                    if (item.getId() == item2.getId()) {
+                        foundSimilarItem = true;
+                        break;
+                    }
+                }
+                if (!foundSimilarItem) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
 

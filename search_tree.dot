@@ -1,0 +1,15 @@
+digraph G {
+  Node_38 [label="Node Number: 0\nDepth: 0\nTotal Value: 0\nItems: [], [], "];
+  Node_45 [label="Node Number: 1\nDepth: 1\nTotal Value: 7\nItems: [], [(2, 4, 7), ], "];
+  Node_48 [label="Node Number: 2\nDepth: 2\nTotal Value: 13\nItems: [(1, 3, 6), ], [(2, 4, 7), ], "];
+  Node_50 [label="Node Number: 3\nDepth: 3\nTotal Value: 18\nItems: [(1, 3, 6), (0, 3, 5), ], [(2, 4, 7), ], "];
+  Node_38 -> Node_40;
+  Node_38 -> Node_41;
+  Node_38 -> Node_42;
+  Node_38 -> Node_43;
+  Node_38 -> Node_44;
+  Node_38 -> Node_45;
+  Node_45 -> Node_47;
+  Node_45 -> Node_48;
+  Node_48 -> Node_50;
+}
