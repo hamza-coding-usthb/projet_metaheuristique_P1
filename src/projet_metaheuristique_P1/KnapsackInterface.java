@@ -386,9 +386,9 @@ public class KnapsackInterface extends JFrame {
             	    }
             	   
             	   data = MultipleKnapsack.dfs(capacities, items, resultsArea, metricsArea, maxDepth, graph1);
-            	   if(fileIndex !=0) {
+            	   //if(fileIndex !=0) {
             	   DataSaved.saveDataToCSV(data, "DFSData.csv");
-            	   }
+            	   //}
             	   
             	}
             	data.saveToCSV("DFSData.csv", "DFSMetrics.csv");
@@ -432,7 +432,7 @@ public class KnapsackInterface extends JFrame {
              // Convert to seconds
                 
                 graph2.setAutoCreate(true);
-                displayGraph(graph2);
+                //displayGraph(graph2);
                 
                 break;
             case "A*":
@@ -456,7 +456,7 @@ public class KnapsackInterface extends JFrame {
              	  dataASTAR.saveToCSV("ASTARData.csv", "ASTARmetrics.csv");
              	}                
                 graph3.setAutoCreate(true);
-                displayGraph(graph3);
+                //displayGraph(graph3);
                 break;
                 
         }

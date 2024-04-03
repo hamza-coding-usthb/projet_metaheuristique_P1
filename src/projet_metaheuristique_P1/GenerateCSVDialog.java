@@ -80,13 +80,23 @@ public class GenerateCSVDialog extends JDialog {
             numberOfItems = Integer.parseInt(numberOfItemsField.getText());
             incrementItem=Integer.parseInt(incrementItemField.getText());
             maxWeight = Integer.parseInt(maxWeightField.getText());
-            minWeight = Integer.parseInt(maxWeightField.getText());
+            minWeight = Integer.parseInt(minWeightField.getText());
             maxValue = Integer.parseInt(maxValueField.getText());
+           
+         // Check if all input fields are filled with positive integers
+            if (numberOfFiles <= 0 || numberOfItems <= 0 || incrementItem <= 0 || maxWeight <= 0 || minWeight <= 0
+                    || maxValue <= 0) {
+                JOptionPane.showMessageDialog(this, "Please enter positive integer values in all fields.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             dispose(); // Close the dialog after retrieving input
             setVisible(false); // Hide the dialog after closing
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Please enter valid integer values.", "Error", JOptionPane.ERROR_MESSAGE);
         }
+        
     }
 
     
@@ -110,6 +120,23 @@ public class GenerateCSVDialog extends JDialog {
     public int getIncrement() {
         return incrementItem;
     }
+ // Override dispose method to handle cancellation
+    @Override
+    public void dispose() {
+        // Check if the dialog should be closed without generating CSV
+        // For example, if the user clicked on the close button (X)
+        if (shouldCancelOperation()) {
+            super.dispose(); // Close the dialog
+        }
+    }
 
+    // Method to determine if the operation should be canceled
+    private boolean shouldCancelOperation() {
+        // Check if any of the text fields are not filled
+        boolean anyEmpty = numberOfFilesField.getText().isEmpty() || numberOfItemsField.getText().isEmpty()
+                || incrementItemField.getText().isEmpty() || maxWeightField.getText().isEmpty()
+                || minWeightField.getText().isEmpty() || maxValueField.getText().isEmpty();
+        return anyEmpty;
+    }
     
 }

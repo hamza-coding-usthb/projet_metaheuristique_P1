@@ -42,9 +42,9 @@ public class CapacityInputDialog extends JDialog {
         pack(); // Resize the dialog to fit its components
         setLocationRelativeTo(parent); // Center the dialog on the parent frame
     }
-
     public List<Integer> getCapacities() {
         List<Integer> capacities = new ArrayList<>();
+        boolean validInput = true;
         for (JTextField textField : capacityFields) {
             String text = textField.getText();
             if (!text.isEmpty()) {
@@ -52,8 +52,13 @@ public class CapacityInputDialog extends JDialog {
                     capacities.add(Integer.parseInt(text));
                 } catch (NumberFormatException ignored) {
                     // Ignore invalid inputs
+                    validInput = false;
                 }
             }
+        }
+        // Return null if the close button is clicked without validating the input
+        if (!validInput) {
+            return null;
         }
         return capacities;
     }

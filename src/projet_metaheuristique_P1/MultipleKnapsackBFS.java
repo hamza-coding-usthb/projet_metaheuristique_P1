@@ -90,6 +90,9 @@ public class MultipleKnapsackBFS {
         public int getNodeNumber() {
             return nodeNumber;
         }
+        public void setNodeNumber(int n) {
+            this.nodeNumber= n;
+        }
         public void setVisited(boolean bol) {
         	this.visited = bol;
         }
@@ -188,8 +191,8 @@ public class MultipleKnapsackBFS {
             }
 
             int totalValue = 0;
-            /*
-            if (itemIndex < items.size()) {
+            
+            if (itemIndex <= items.size()) {
                 resultsArea.append("Sacks:\n");
                 int sackNumber = 1;
                 for (List<Item> sack : sacks) {
@@ -200,14 +203,21 @@ public class MultipleKnapsackBFS {
 
                 resultsArea.append("Total Value: " + totalValue + "\n\n");
             }
-            */
+            
             
             
             state.nodeNumber = j;
             state.setVisited(true);
             j++;
             
+            State newSack = new State(sacks, totalWeight, itemIndex);
+            newSack.setVisitDuration(visitDuration);
+            newSack.setNodeNumber(j);
+            allSacks.add(newSack);
+            
             if(targetValueReached) {
+            	data.setSatisfiable(true);
+            	totalValue = 0;
             	resultsArea.append("Sacks When Target Reached:\n");
                 int sackNumber = 1;
                 for (List<Item> sack : sacks) {
@@ -220,34 +230,27 @@ public class MultipleKnapsackBFS {
             	break;
             }
             
-            State newSack = new State(sacks, totalWeight, itemIndex);
-            newSack.setVisitDuration(visitDuration);
-            allSacks.add(newSack);
             
-
-            if (!insufficientCapacity) {
-
+            
+            
+            
+            
                 if (itemIndex >= items.size()) {
-                    for (List<Item> sack : sacks) {
-                        totalValue += calculateTotalValue(sack);
-                    }
-                    printSacks(sacks, resultsArea);
+                    
                     continue;
                 }
-            }
+            
             
           
             
             for (int i = 0; i < numSacks; i++) {
             	List<List<Item>> parentSacks = copySacks(sacks);
-                totalWeight = state.totalWeight;
+                totalWeight = state.totalWeight;      	
             	
-            	for (int j1 = 0; j1 < numItems; j1++) {
-            	
-                if (canFit(capacities.get(i), parentSacks.get(i), items.get(j1)) && !state.containsItem(j1)) {
+                if (canFit(capacities.get(i), parentSacks.get(i), items.get(itemIndex)) && !state.containsItem(itemIndex)) {
                     List<List<Item>> newSacks = copySacks(sacks);
-                    newSacks.get(i).add(items.get(j1));
-                    totalWeight += items.get(j1).weight;
+                    newSacks.get(i).add(items.get(itemIndex));
+                    totalWeight += items.get(itemIndex).weight;
                     
                         State childState = new State(newSacks, totalWeight, itemIndex + 1);
                          // Add child to the parent's children list
@@ -256,16 +259,24 @@ public class MultipleKnapsackBFS {
                             queue.offer(childState);
                             }
                         // Enqueue the child state instead of pushing to stack
-                        
-                    
+                                           
                 }
-            }
-            }
+                
             
-            allSacks.sort(Comparator.comparingInt(State::getTotalValue).reversed());
+            }
+            if(itemIndex <= items.size()) {
+            	List<List<Item>> parentSacks = copySacks(sacks);
+            	int parentWeight = state.totalWeight;
+            	State ParentalState = new State(parentSacks, parentWeight, itemIndex + 1);
+            	state.addChild(ParentalState);
+            	queue.offer(ParentalState);
+        	}
+            
+            
 
         }
-        
+        allSacks.sort(Comparator.comparingInt((State state) -> state.getTotalValue()).reversed()
+                .thenComparingInt((State state) -> state.getNodeNumber()));
         Item.resetItemCount();
         long endTime = System.currentTimeMillis();
         long durationMillis = endTime - startTime;
@@ -277,11 +288,13 @@ public class MultipleKnapsackBFS {
         if (insufficientCapacity || maximumDepthReached || ((maxDepth < numItems)&&(queue.isEmpty()))) {
         	if(maximumDepthReached) {
         		resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
-        	} else if(insufficientCapacity || ((maxDepth < numItems)&&(queue.isEmpty()))) {
-        		resultsArea.append("Best result possible: \n");
-        	}
-            bestState(allSacks, resultsArea);
-        }
+        		bestState(allSacks, resultsArea);
+        	} 
+            
+        }else {
+    		resultsArea.append("Best result possible: \n");
+    		bestState(allSacks, resultsArea);
+    	}
      // Build the graph based on the parent-child relationships
         for (State parentState : allStates) {
             for (State childState : parentState.getChildren()) {    	
@@ -315,7 +328,13 @@ public class MultipleKnapsackBFS {
         data.setnumItems(numItems);
         data.setDuration(durationSeconds);
         data.setMaximumDepth(maxDepth);
+        double val = ((double)calculateCurrentVal(allSacks.get(0).sacks))/ targetVal;
+        
+        data.setSatRate(val);
         data.setNodesTraversed(j);
+        data.setNodeSole(allSacks.get(0).getNodeNumber());
+        data.setNodeSoleTime(allSacks.get(0).getVisitDuration().toMillis()/1000.0);
+
         
         return(data);
         
@@ -391,7 +410,7 @@ public class MultipleKnapsackBFS {
         System.out.println(totalCapacity);
         return totalCapacity;
     }
-
+/*
     private static void printSacks(List<List<Item>> sacks, JTextArea resultsArea) {
         resultsArea.append("Sacks: Optimum Result\n");
         int sackNumber = 1;
@@ -405,6 +424,7 @@ public class MultipleKnapsackBFS {
 
         resultsArea.append("Total Value: " + totalValue + "\n\n");
     }
+    */
     private static int calculateMaxVal(List<Item> items) {
     	int maxVal = 0;
     	for(Item item: items) {

@@ -53,7 +53,7 @@ public class StatCurve {
 
         // Create the chart
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Pour 4 sacs", // Chart title
+                "Pour 3 sacs", // Chart title
                 "Nombre D'objet", // X-axis label
                 "Durée De l'Execution", // Y-axis label
                 dataset // Dataset

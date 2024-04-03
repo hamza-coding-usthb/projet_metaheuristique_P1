@@ -85,6 +85,9 @@ public class MultipleKnapsack {
         public int getNodeNumber() {
             return nodeNumber;
         }
+        public void setNodeNumber(int n) {
+            this.nodeNumber= n;
+        }
         public void setVisited(boolean bol) {
         	this.visited = bol;
         }
@@ -203,8 +206,8 @@ public class MultipleKnapsack {
 
             int totalValue = 0;
                     
-           /* 
-            if (itemIndex < items.size()) {
+           
+            if (itemIndex <= items.size()) {
                 resultsArea.append("Sacks:\n");
                 int sackNumber = 1;
                 for (List<Item> sack : sacks) {
@@ -215,17 +218,20 @@ public class MultipleKnapsack {
 
                 resultsArea.append("Total Value: " + totalValue + "\n\n");
             }
-            */
+            
             
             state.nodeNumber = j;
             state.setVisited(true);
             
             j++;
            
-            
+            State newSack = new State(sacks, totalWeight, itemIndex);
+            newSack.setVisitDuration(visitDuration);
+            newSack.setNodeNumber(j);
+            allSacks.add(newSack);
             
             if(targetValueReached) {
-            	
+            	totalValue = 0;
             	data.setSatisfiable(true);
             	resultsArea.append("Sacks When Target Reached:\n");
                 int sackNumber = 1;
@@ -240,39 +246,39 @@ public class MultipleKnapsack {
             }
             
             
-            State newSack = new State(sacks, totalWeight, itemIndex);
-            newSack.setVisitDuration(visitDuration);
-            allSacks.add(newSack);
+           
             
-            if (!insufficientCapacity) {
+            
+            
 
                 if (itemIndex >= items.size()) {
-                    for (List<Item> sack : sacks) {
-                        totalValue += calculateTotalValue(sack);
-                    }
-                    printSacks(sacks, resultsArea);
+                   
                     continue;
                 }
-            }
-            
-         
-            
+ 
             
 
-            ;
-            for (int i = 0; i < numSacks; i++) {
-            	
-                
+            
+            
+            
+            // new branching (child nodes) either you put the item in one of the sacks or you don't
+            
+            if(itemIndex <= items.size()) {
+            	List<List<Item>> parentSacks = copySacks(sacks);
+            	int parentWeight = state.totalWeight;
+            	State ParentalState = new State(parentSacks, parentWeight, itemIndex + 1);
+            	state.addChild(ParentalState);
+        		stack.push(ParentalState);
+        	}
+            for (int i = numSacks-1; i >= 0; i--) {
+            	            
                 List<List<Item>> parentSacks = copySacks(sacks);
-                totalWeight = state.totalWeight;
-
-                for (int j1 = 0; j1 < numItems; j1++) {
+                totalWeight = state.totalWeight;             	
                 	
-                	
-                    if (canFit(capacities.get(i), parentSacks.get(i), items.get(j1)) && !state.containsItem(j1)) {
+                    if (canFit(capacities.get(i), parentSacks.get(i), items.get(itemIndex)) && !state.containsItem(itemIndex)) {
                     	List<List<Item>> newSacks = copySacks(sacks);
-                        newSacks.get(i).add(items.get(j1));
-                        totalWeight += items.get(j1).weight;
+                        newSacks.get(i).add(items.get(itemIndex));
+                        totalWeight += items.get(itemIndex).weight;
                         
                         State childState = new State(newSacks, totalWeight, itemIndex + 1);
                        if(!isSimilarState(childState, allSacks)) {
@@ -281,14 +287,13 @@ public class MultipleKnapsack {
                         }
                     }
                     
-                }
+                
 
                 // Create a new child state with the updated sacks
                 
             }
             
-            allSacks.sort(Comparator.comparingInt(State::getTotalValue).reversed());
-            
+                        
          // Create a unique node ID based on the current state
             
 
@@ -300,7 +305,9 @@ public class MultipleKnapsack {
             
         }
         
-        
+        allSacks.sort(Comparator.comparingInt((State state) -> state.getTotalValue()).reversed()
+                .thenComparingInt((State state) -> state.getNodeNumber()));
+
         Item.resetItemCount();
         long endTime = System.currentTimeMillis();
         long durationMillis = endTime - startTime;
@@ -336,23 +343,30 @@ public class MultipleKnapsack {
         
 
         
-        if (insufficientCapacity || maximumDepthReached || ((maxDepth < numItems)&&(stack.isEmpty())) || j==25000) {
+        if (insufficientCapacity || maximumDepthReached || ((maxDepth < numItems)&&(stack.isEmpty()))) {
         	if(maximumDepthReached) {
         		resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
-        	} else if(insufficientCapacity || ((maxDepth < numItems)&&(stack.isEmpty())) || j==25000) {
-        		resultsArea.append("Best result possible: \n");
-        	}
-            bestState(allSacks, resultsArea);
-        }
-        //DotFileGenerator.generateDotFile(allStates, 6000, 6000);
+        		bestState(allSacks, resultsArea);
+        	} 
+            
+        }else {
+    		resultsArea.append("Best result possible: \n");
+    		bestState(allSacks, resultsArea);
+    	}
+        DotFileGenerator.generateDotFile(allStates, 6000, 6000);
 
         metricsArea.append("The number of nodes in the search tree: " + j + "\n");
         metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
         data.setnumItems(numItems);
         data.setDuration(durationSeconds);
         data.setMaximumDepth(maxDepth);
-        data.setSatRate(calculateCurrentVal(allSacks.get(0).sacks)/targetVal);
+        
+        double val = ((double)calculateCurrentVal(allSacks.get(0).sacks))/ targetVal;
+        
+        data.setSatRate(val);
         data.setNodesTraversed(j);
+        data.setNodeSole(allSacks.get(0).getNodeNumber());
+        data.setNodeSoleTime(allSacks.get(0).getVisitDuration().toMillis()/1000.0);
         
         return(data);
 
@@ -365,15 +379,16 @@ public class MultipleKnapsack {
             resultsArea.append("Best:\n");
             int totalValueFirstState = 0;
             Duration visitDuration = firstState.getVisitDuration();
+            double seconds = Math.abs(visitDuration.toMillis() / 1000.0);
 
          // Convert duration to string and remove the "PT" prefix
-            	String dur = visitDuration.toString().substring(2);
+            	
             for (int i = 0; i < firstState.sacks.size(); i++) {
                 List<Item> sack = firstState.sacks.get(i);
                 resultsArea.append("Sack " + (i + 1) + ": " + sack.toString() + "\n");
                 totalValueFirstState += calculateTotalValue(sack);
             }
-            resultsArea.append("Total value of the first state: " + totalValueFirstState + " Duration to reach this state: "+ dur +"\n");
+            resultsArea.append("Total value of the first state: " + totalValueFirstState + " Duration to reach this state: "+ seconds +"\n");
         } else {
             resultsArea.append("The allSacks list is empty.\n");
         }
@@ -438,7 +453,7 @@ public class MultipleKnapsack {
         
         return totalCapacity;
     }
-
+/*
     private static void printSacks(List<List<Item>> sacks, JTextArea resultsArea) {
         resultsArea.append("Sacks: Optimum Result\n");
         int sackNumber = 1;
@@ -451,6 +466,7 @@ public class MultipleKnapsack {
 
         resultsArea.append("Total Value: " + totalValue + "\n\n");
     }
+    */
     private static int calculateMaxVal(List<Item> items) {
     	int maxVal = 0;
     	for(Item item: items) {

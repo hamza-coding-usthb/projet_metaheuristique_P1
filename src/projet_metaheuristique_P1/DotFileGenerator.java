@@ -36,7 +36,7 @@ public class DotFileGenerator {
             writer.close();
 
             // Generate the PNG image using Graphviz
-            generatePngImage("search_tree.dot", width, height);
+            //generatePngImage("search_tree.dot", width, height);
 
             System.out.println("DOT file with node numbers generated successfully.");
 
@@ -45,19 +45,5 @@ public class DotFileGenerator {
         }
     }
 
-    private static void generatePngImage(String dotFileName, int width, int height) {
-        // Command to generate PNG image with specified dimensions
-        String command = "dot -Tpng -Gdpi=300 -Gsize=" + width + "," + height +
-                         " -o search_tree.png " + dotFileName;
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.inheritIO(); // Redirects standard output and error streams to the current JVM's standard output and error streams
-            Process process = pb.start();
-            process.waitFor(); // Wait for the process to complete
-            System.out.println("PNG image generated successfully.");
-        } catch (IOException | InterruptedException e) {
-            System.err.println("Error while generating PNG image: " + e.getMessage());
-        }
-    }
+    
 }

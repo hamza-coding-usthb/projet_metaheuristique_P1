@@ -17,13 +17,18 @@ public class DataSaved {
         private int maximumDepth;
         private boolean satisfiable;
         private double satRate;
+        private int node;
+        private double temps;
+        
 
-        public DataSaved(int numItems,double duration, int nodesTraversed, int maximumDepth, boolean satisfiable, double satRate) {
+        public DataSaved(int numItems,double duration, int nodesTraversed, int maximumDepth, boolean satisfiable, double satRate, int node, double temps) {
             this.duration = duration;
             this.nodesTraversed = nodesTraversed;
             this.maximumDepth = maximumDepth;
             this.satisfiable = satisfiable;
             this.satRate = satRate;
+            this.node = node;
+            this.temps = temps;
         }
         
         
@@ -50,6 +55,12 @@ public class DataSaved {
         public void setSatRate(double satRate) {
             this.satRate = satRate;
         }
+        public void setNodeSole(int node) {
+            this.node = node;
+        }
+        public void setNodeSoleTime(double temps) {
+            this.temps = temps;
+        }
         
         public int getnumItems() {
             return numItems;
@@ -69,6 +80,13 @@ public class DataSaved {
         
         public double getSatRate() {
             return satRate * 100;
+        }
+        
+        public int getNodeSol() {
+            return node;
+        }
+        public double getNodeSolTime() {
+            return temps;
         }
         
 
@@ -91,7 +109,7 @@ public class DataSaved {
         try (FileWriter writer = new FileWriter(fileName, true)) {
             // If the file does not exist, write the CSV header
             if (!new File(fileName).exists()) {
-                writer.append("Objets,Durée,Noeuds traversés,Profondeur,Satisfiable,SatRate\n");
+                writer.append("Objets,Durée,Noeuds_traversés,Profondeur,Satisfiable,SatRate,nodeSol,nodeSoleTime\n");
             }
 
             // Write data to CSV
@@ -99,8 +117,10 @@ public class DataSaved {
                 writer.append(data.getDuration() + ",");
                 writer.append(data.getNodesTraversed() + ",");
                 writer.append(data.getMaximumDepth() + ",");
-                writer.append(data.isSatisfiable() + "\n");
-                writer.append(data.getSatRate() + "\n");
+                writer.append(data.isSatisfiable() + ",");
+                writer.append(data.getSatRate() + ",");
+                writer.append(data.getNodeSol() + ",");
+                writer.append(data.getNodeSolTime() + "\n");
             
 
             System.out.println("Data appended to CSV file '" + fileName + "'.");
