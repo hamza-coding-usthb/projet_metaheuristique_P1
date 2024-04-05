@@ -67,13 +67,15 @@ public class KnapsackInterface extends JFrame {
         upperLeftPanel.setBorder(BorderFactory.createTitledBorder("Parameters"));
 
         JLabel algorithmLabel = new JLabel("Algorithm:");
-        algorithmComboBox = new JComboBox<>(new String[]{"DFS", "BFS", "A*"});
+        algorithmComboBox = new JComboBox<>(new String[]{"DFS", "BFS", "A*", "Genetic", "BSO"});
         JLabel maxDepthLabel = new JLabel("Max Depth:");
         maxDepthField = new JTextField();
         JLabel numberOfSacksLabel = new JLabel("Number of Sacks:");
         numberOfSacksField = new JTextField();
         
+        
         //JLabel capacityLabel = new JLabel("Capacity:");
+        
         
 
         upperLeftPanel.add(algorithmLabel);
@@ -86,25 +88,7 @@ public class KnapsackInterface extends JFrame {
         
         
         
-        // Add capacity fields dynamically based on the number of sacks
-        /*
-        numberOfSacksField.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                updateCapacityFields();
-            }
-        });
-        */
         
-        /*
-        upperLeftPanel.add(capacityLabel);
-        for (int i = 0; i < 20; i++) {
-            JTextField capacityField = new JTextField();
-            capacityFields.add(capacityField);
-            upperLeftPanel.add(capacityField);
-            capacityField.setVisible(false);
-        }
-        */
         
         
         JScrollPane parametersScrollPane = new JScrollPane(upperLeftPanel);
@@ -308,54 +292,7 @@ public class KnapsackInterface extends JFrame {
             JOptionPane.showMessageDialog(this, "Number of sacks must be a positive integer.", "Warning", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        /*
-     // Check if the capacity fields are empty or contain invalid input
-        for (int i = 0; i < numberOfSacks; i++) {
-            JTextField capacityField = capacityFields.get(i);
-            String capacityText = capacityField.getText();
-            if (capacityText.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please enter the capacity for sack " + (i + 1) + ".", "Warning", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            // Check if the entered capacity is a valid integer
-            try {
-                int capacity = Integer.parseInt(capacityText);
-                // Check if the entered capacity is non-negative
-                if (capacity < 0) {
-                    JOptionPane.showMessageDialog(this, "Capacity for sack " + (i + 1) + " must be a non-negative integer.", "Warning", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Capacity for sack " + (i + 1) + " must be a valid integer.", "Warning", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-        }
-*/
-        // Prepare items
-        
-        
-       /*      
-       
-        List<MultipleKnapsackBFS.Item> itemsBFS = new ArrayList<>();
-        for(int i=0; i<weightsFromFile.size(); i++) {
-        	itemsBFS.add(new MultipleKnapsackBFS.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
-        }
-       
-        for (int i = 0; i < weights.length; i++) {
-            itemsBFS.add(new MultipleKnapsackBFS.Item(weights[i], values[i]));
-        }
-       
-        List<AStarAlgo.Item> itemsAStar = new ArrayList<>();
-        for(int i=0; i<weightsFromFile.size(); i++) {
-        	itemsAStar.add(new AStarAlgo.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
-        }
-       
-        for (int i = 0; i < weights.length; i++) {
-        	itemsAStar.add(new AStarAlgo.Item(weights[i], values[i]));
-        }
-        
-        */
-
+      
         // Retrieve capacities
         List<Integer> capacities = updateCapacityFields();
         if (capacities == null || capacities.isEmpty()) {
@@ -458,6 +395,28 @@ public class KnapsackInterface extends JFrame {
                 graph3.setAutoCreate(true);
                 //displayGraph(graph3);
                 break;
+            case "Genetic":
+            	System.out.println("****Genetic algorithm testing****");
+            	
+            	
+            	
+            	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
+            	    List<Integer> weightsFromFile = allWeightsFromFile.get(fileIndex);
+            	    
+            	    List<Integer> valuesFromFile = allValuesFromFile.get(fileIndex);
+            	    
+            	    List<BasePopulation.Item> itemsGA = new ArrayList<>();
+
+            	    // Iterate over the data of the current file and add items
+            	    for (int i = 0; i < weightsFromFile.size(); i++) {
+            	        itemsGA.add(new BasePopulation.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+            	    }
+            	   
+            	   GeneticAlgo.generatePopulation(capacities, itemsGA, 30);
+             	   
+             	}
+            	
+            	break;
                 
         }
 

@@ -43,6 +43,12 @@ public class AStarAlgo {
 	    public static void resetItemCount() {
 	        itemCount = 0;
 	    }
+	    public int getValue() {
+	    	return this.value;
+	    }
+	    public int getWeight() {
+	    	return this.weight;
+	    }
 	}
 
 	static class State {
@@ -101,6 +107,9 @@ public class AStarAlgo {
         public void setVisitDuration(Duration visitDuration) {
             this.visitDuration = visitDuration;
         }
+        public List<List<Item>> getSacks(){
+        	return this.sacks;
+        }
 
         // Method to get visit duration
         public Duration getVisitDuration() {
@@ -147,20 +156,22 @@ public class AStarAlgo {
         if (insufficientCapacity) {
             resultsArea.append("Total capacity of the sacks is insufficient to carry all the items.\n");
         }
+        
 
         List<List<Item>> initialSacks = new ArrayList<>();
         for (int i = 0; i < numSacks; i++) {
             initialSacks.add(new ArrayList<>());
         }
+        State initialState = new State(initialSacks, 0, 0);
 
         PriorityQueue<State> priorityQueue = new PriorityQueue<>(
         	    (node1, node2) -> {
-        	        double f1 = AStarHeuristic.g(node1) + AStarHeuristic.h(node1, items.subList(node1.itemIndex, items.size()), getRemainingCapacities(node1, capacities), totalCapacityOfSacks);
-        	        double f2 = AStarHeuristic.g(node2) + AStarHeuristic.h(node2, items.subList(node2.itemIndex, items.size()), getRemainingCapacities(node2, capacities), totalCapacityOfSacks);
+        	        double f1 = AStarHeuristic.g(node1) + AStarHeuristic.h(node1, items.subList(node1.itemIndex, items.size()), capacities);
+        	        double f2 = AStarHeuristic.g(node2) + AStarHeuristic.h(node2, items.subList(node2.itemIndex, items.size()), capacities);
         	        return Double.compare(f2, f1); // Compare f1 to f2 to order elements in ascending order
         	    }
         	);
-        priorityQueue.offer(new State(initialSacks, 0, 0));
+        priorityQueue.offer(initialState);
         
 
         int j = 0;
@@ -172,9 +183,9 @@ public class AStarAlgo {
         long startTime = System.currentTimeMillis(); //measure time begins
         Instant startingTime = Instant.now();
         
-        while (!priorityQueue.isEmpty()  && j< 65000) {
+        while (!priorityQueue.isEmpty()) {
             State state = priorityQueue.poll();
-            
+            state.setNodeNumber(j);
             
             Instant stateStartTime = Instant.now();
             
@@ -184,22 +195,17 @@ public class AStarAlgo {
             state.setVisitDuration(visitDuration); // Set visit duration
             
             allStates.add(state);            
-           
-            
+           /*
+            System.out.println("h"+ AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities));
+            System.out.println("g"+ AStarHeuristic.g(state));
+            double f = AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities) +  AStarHeuristic.g(state);
+            System.out.println("f"+ f);
+            */
             
             List<List<Item>> sacks = state.sacks;
             int totalWeight = state.totalWeight;
             int itemIndex = state.itemIndex;
             
-            /*
-            double hval = AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), getRemainingCapacities(state, capacities), totalCapacityOfSacks);
-            double gval = AStarHeuristic.g(state);
-            double fval = hval + gval;
-            
-            System.out.println("h "+hval);
-            System.out.println("g "+gval);
-            System.out.println("f "+fval);
-            */
             
             targetValueReached = targetVal <= calculateCurrentVal(sacks);
             
