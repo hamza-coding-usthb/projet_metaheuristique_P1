@@ -9,7 +9,7 @@ public class CSVGenerator {
 	
 	
 
-    public static void generateCSV(String baseFileName, int itemCount, int maxWeight,int minWeight, int maxValue, int nFiles, int inc) {
+    public static void generateCSV(String baseFileName, int itemCount, int maxWeight,int minWeight, int maxValue, int minValue,int nFiles, int inc) {
     	if (itemCount <= 0 || maxWeight <= 0 || minWeight <= 0 || maxValue <= 0 || nFiles <= 0 || inc <= 0) {
             JOptionPane.showMessageDialog(null, "Invalid input arguments. All values must be positive integers.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -32,10 +32,13 @@ public class CSVGenerator {
                 	int weightRange = maxWeight - minWeight;
                 	
                 	int weight = random.nextInt(weightRange + 1) + minWeight;
- 
+                	
+                	int valueRange = maxValue - minValue;
+                	
+                
                 	// Generate random weight between minweight and maxWeight
-                	System.out.println("Is it here: "+ weight);                   
-                	int value = random.nextInt(maxValue) + 1; // Generate random value between 1 and maxValue
+                                  
+                	int value = random.nextInt(valueRange + 1) + minValue; // Generate random value between 1 and maxValue
                     writer.append(weight + "," + value + "\n");
                 }
 

@@ -35,6 +35,17 @@ public class MultipleKnapsackBFS {
 	    public int getId() {
 	        return id;
 	    }
+	    
+	    public int getValue() {
+			// TODO Auto-generated method stub
+			return this.value;
+		}
+
+		public int getWeight() {
+			// TODO Auto-generated method stub
+			return this.weight;
+		}
+
 
 	    @Override
 	    public String toString() {
@@ -161,7 +172,7 @@ public class MultipleKnapsackBFS {
         List<State> allSacks = new ArrayList<>();
         long startTime = System.currentTimeMillis(); //measure time begins
         Instant startingTime = Instant.now();
-        while (!queue.isEmpty() && j<= 65000) {
+        while (!queue.isEmpty()) {
             State state = queue.poll(); // Change to poll
             
             Instant stateStartTime = Instant.now();
@@ -285,16 +296,10 @@ public class MultipleKnapsackBFS {
         
         
         
-        if (insufficientCapacity || maximumDepthReached || ((maxDepth < numItems)&&(queue.isEmpty()))) {
-        	if(maximumDepthReached) {
-        		resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
-        		bestState(allSacks, resultsArea);
-        	} 
-            
-        }else {
+        
     		resultsArea.append("Best result possible: \n");
     		bestState(allSacks, resultsArea);
-    	}
+    	
      // Build the graph based on the parent-child relationships
         for (State parentState : allStates) {
             for (State childState : parentState.getChildren()) {    	
@@ -324,10 +329,16 @@ public class MultipleKnapsackBFS {
         DotFileGeneratorBFS.generateDotFile(allStates);
 
         metricsArea.append("The number of nodes in the search tree: " + j + "\n");
-        metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
+        if(maximumDepthReached) {
+        metricsArea.append("The depth of the search tree: " + maximumDepth + "\n");
+        data.setMaximumDepth(maximumDepth);
+        }else {
+        	metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
+        	data.setMaximumDepth(maxDepth);
+        }
         data.setnumItems(numItems);
         data.setDuration(durationSeconds);
-        data.setMaximumDepth(maxDepth);
+        
         double val = ((double)calculateCurrentVal(allSacks.get(0).sacks))/ targetVal;
         
         data.setSatRate(val);

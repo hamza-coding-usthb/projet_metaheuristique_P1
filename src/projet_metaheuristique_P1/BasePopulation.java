@@ -28,6 +28,13 @@ public class BasePopulation {
 	    public int getId() {
 	        return id;
 	    }
+	    public int getValue() {
+	    	return value;
+	    }
+	    public int getWeight() {
+	    	return weight;
+	    }
+	    
 
 	    @Override
 	    public String toString() {
@@ -42,6 +49,7 @@ public class BasePopulation {
 		static int stateCount = 0;
         List<List<Item>> sacks;
         int id;
+        List<BasePopulation.Item> items;
         int totalWeight;
         int itemIndex;
         int totalValue;
@@ -66,6 +74,13 @@ public class BasePopulation {
                 totalValue += calculateTotalValue(sack);
             }
             return totalValue;
+        }
+        public int getTotalWeight() {
+            int totalWeight = 0;
+            for (List<Item> sack : sacks) {
+                totalWeight += calculateSackWeight(sack);
+            }
+            return totalWeight;
         }
 
         // Method to add child states
@@ -102,7 +117,16 @@ public class BasePopulation {
         	this.totalValue = val;
         }
         public double getFitness() {
-        	return totalValue/totalWeight;
+        	return totalValue;
+        }
+     // Getter for items
+        public List<BasePopulation.Item> getItems() {
+            return items;
+        }
+
+        // Setter for items
+        public void setItems(List<BasePopulation.Item> items) {
+            this.items = items;
         }
 
         // Method to get visit duration
@@ -157,20 +181,26 @@ public class BasePopulation {
                 resultsArea.append("The allSacks list is empty.\n");
             }
         }
+        
 
         
 
-        private static int calculateSackWeight(List<Item> sack) {
+        public static int calculateSackWeight(List<Item> sack) {
             int weight = 0;
             for (Item item : sack) {
                 weight += item.weight;
             }
             return weight;
         }
-
+        public static boolean canFit(int capacity, List<Item> sack, Item item) {
+            if (sack == null) return true;
+            int sackWeight = calculateSackWeight(sack);
+            ;
+            return sackWeight + item.weight <= capacity;
+        }
        
 
-        private static int calculateTotalWeightOfItems(List<Item> items) {
+        public static int calculateTotalWeightOfItems(List<Item> items) {
             int totalWeight = 0;
             for (Item item : items) {
                 totalWeight += item.weight;
@@ -184,6 +214,43 @@ public class BasePopulation {
                 copy.add(new ArrayList<>(sack));
             }
             return copy;
+        }
+        
+
+        // Method to remove child states
+        public void removeChild(State child) {
+            children.remove(child);
+            // Update total value and total weight when a child state is removed
+            updateTotalValue();
+            updateTotalWeight();
+        }
+
+        // Method to update the total value of the state
+        public void updateTotalValue() {
+            totalValue = calculateTotalValue();
+        }
+
+        // Method to update the total weight of the state
+        public void updateTotalWeight() {
+            totalWeight = calculateTotalWeight();
+        }
+
+        // Method to calculate the total value of the state
+        private int calculateTotalValue() {
+            int totalValue = 0;
+            for (List<Item> sack : sacks) {
+                totalValue += calculateTotalValue(sack);
+            }
+            return totalValue;
+        }
+
+        // Method to calculate the total weight of the state
+        private int calculateTotalWeight() {
+            int totalWeight = 0;
+            for (List<Item> sack : sacks) {
+                totalWeight += calculateSackWeight(sack);
+            }
+            return totalWeight;
         }
 
         private static int calculateTotalCapacityOfSacks(List<Integer> capacities) {

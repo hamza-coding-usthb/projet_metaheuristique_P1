@@ -15,6 +15,7 @@ public class GenerateCSVDialog extends JDialog {
     private JTextField maxWeightField;
     private JTextField minWeightField;
     private JTextField maxValueField;
+    private JTextField minValueField;
     private JButton generateButton;
     
     private int numberOfFiles;
@@ -23,13 +24,14 @@ public class GenerateCSVDialog extends JDialog {
     private int maxWeight;
     private int minWeight;
     private int maxValue;
+    private int minValue;
 
     public GenerateCSVDialog(JFrame parent) {
         super(parent, "Generate CSV", true);
         setSize(300, 200);
         setLocationRelativeTo(parent);
 
-        JPanel panel = new JPanel(new GridLayout(7, 3));
+        JPanel panel = new JPanel(new GridLayout(8, 4));
         
         JLabel numberOfFilesLabel = new JLabel("Number of files:");
         numberOfFilesField = new JTextField();
@@ -46,7 +48,9 @@ public class GenerateCSVDialog extends JDialog {
         
         JLabel maxValueLabel = new JLabel("Max Value:");
         maxValueField = new JTextField();
-
+        
+        JLabel minValueLabel = new JLabel("Min Value:");
+        minValueField = new JTextField();
         
         panel.add(numberOfFilesLabel);
         panel.add(numberOfFilesField);
@@ -60,6 +64,8 @@ public class GenerateCSVDialog extends JDialog {
         panel.add(minWeightField);
         panel.add(maxValueLabel);
         panel.add(maxValueField);
+        panel.add(minValueLabel);
+        panel.add(minValueField);
 
         generateButton = new JButton("Generate");
         generateButton.addActionListener(new ActionListener() {
@@ -82,10 +88,11 @@ public class GenerateCSVDialog extends JDialog {
             maxWeight = Integer.parseInt(maxWeightField.getText());
             minWeight = Integer.parseInt(minWeightField.getText());
             maxValue = Integer.parseInt(maxValueField.getText());
+            minValue = Integer.parseInt(minValueField.getText());
            
          // Check if all input fields are filled with positive integers
             if (numberOfFiles <= 0 || numberOfItems <= 0 || incrementItem <= 0 || maxWeight <= 0 || minWeight <= 0
-                    || maxValue <= 0) {
+                    || maxValue <= 0 || minValue <=0) {
                 JOptionPane.showMessageDialog(this, "Please enter positive integer values in all fields.", "Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
@@ -108,6 +115,9 @@ public class GenerateCSVDialog extends JDialog {
     }
     public int getMaxValue() {
         return maxValue;
+    }
+    public int getMinValue() {
+        return minValue;
     }
 
     public int getMaxWeight() {
@@ -135,7 +145,7 @@ public class GenerateCSVDialog extends JDialog {
         // Check if any of the text fields are not filled
         boolean anyEmpty = numberOfFilesField.getText().isEmpty() || numberOfItemsField.getText().isEmpty()
                 || incrementItemField.getText().isEmpty() || maxWeightField.getText().isEmpty()
-                || minWeightField.getText().isEmpty() || maxValueField.getText().isEmpty();
+                || minWeightField.getText().isEmpty() || maxValueField.getText().isEmpty() || minValueField.getText().isEmpty();
         return anyEmpty;
     }
     

@@ -38,6 +38,18 @@ public class MultipleKnapsack {
 	    public static void resetItemCount() {
 	        itemCount = 0;
 	    }
+
+		public int getValue() {
+			// TODO Auto-generated method stub
+			return this.value;
+		}
+
+		public int getWeight() {
+			// TODO Auto-generated method stub
+			return this.weight;
+		}
+
+		
 	}
 
 
@@ -343,20 +355,20 @@ public class MultipleKnapsack {
         
 
         
-        if (insufficientCapacity || maximumDepthReached || ((maxDepth < numItems)&&(stack.isEmpty()))) {
-        	if(maximumDepthReached) {
-        		resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
-        		bestState(allSacks, resultsArea);
-        	} 
-            
-        }else {
+        
     		resultsArea.append("Best result possible: \n");
     		bestState(allSacks, resultsArea);
-    	}
+    	
         DotFileGenerator.generateDotFile(allStates, 6000, 6000);
 
         metricsArea.append("The number of nodes in the search tree: " + j + "\n");
-        metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
+        if(maximumDepthReached) {
+        metricsArea.append("The depth of the search tree: " + maximumDepth + "\n");
+        data.setMaximumDepth(maximumDepth);
+        }else {
+        	metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
+        	data.setMaximumDepth(maxDepth);
+        }
         data.setnumItems(numItems);
         data.setDuration(durationSeconds);
         data.setMaximumDepth(maxDepth);

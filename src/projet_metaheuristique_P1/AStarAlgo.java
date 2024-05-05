@@ -195,13 +195,18 @@ public class AStarAlgo {
             state.setVisitDuration(visitDuration); // Set visit duration
             
             allStates.add(state);            
-           /*
-            System.out.println("h"+ AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities));
+          
+            double ach = AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities);
+            /*
             System.out.println("g"+ AStarHeuristic.g(state));
             double f = AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities) +  AStarHeuristic.g(state);
             System.out.println("f"+ f);
+            
             */
             
+            if(ach == 0.0) {
+            	break;
+            }
             List<List<Item>> sacks = state.sacks;
             int totalWeight = state.totalWeight;
             int itemIndex = state.itemIndex;
@@ -281,15 +286,15 @@ public class AStarAlgo {
                  totalWeight = state.totalWeight;
                  
             	
-                if (canFit(capacities.get(i), parentSacks.get(i), items.get(itemIndex)) && !state.containsItem(itemIndex)) {
+                if (canFit(capacities.get(i), parentSacks.get(i), items.get(itemIndex)) /*&& !state.containsItem(itemIndex)*/) {
                     List<List<Item>> newSacks = copySacks(sacks);
                     newSacks.get(i).add(items.get(itemIndex));
                     totalWeight += items.get(itemIndex).weight;
                     State newState = new State(newSacks, totalWeight, itemIndex + 1);
-                    if(!isSimilarState(newState, allSacks)) {
+                    //if(!isSimilarState(newState, allSacks)) {
                         state.addChild(newState);
                         priorityQueue.offer(newState);
-                        }
+                       // }
                    
              
                 }
@@ -344,26 +349,23 @@ public class AStarAlgo {
         }
         graph.setAttribute("layout.algorithm", "tree");
         
-        /*
-        
-        if (insufficientCapacity || maximumDepthReached || ((maxDepth < numItems)&&(priorityQueue.isEmpty()))) {
-        	if(maximumDepthReached) {
-        		resultsArea.append("Maximum depth in the graph search reached. Best result at this depth: \n");
-        		bestState(allSacks, resultsArea);
-        	} 
-        	*/
-            
-        //}else {
+       
     		resultsArea.append("Best result possible: \n");
     		bestState(allSacks, resultsArea);
-    	//}
+    	
         DotFileGeneratorASTAR.generateDotFile(allStates);
         metricsArea.append("The number of nodes in the search tree: " + j + "\n");
-        metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
+        if(maximumDepthReached) {
+        metricsArea.append("The depth of the search tree: " + maximumDepth + "\n");
+        data.setMaximumDepth(maximumDepth);
+        }else {
+        	metricsArea.append("The depth of the search tree: " + maxDepth + "\n");
+        	data.setMaximumDepth(maxDepth);
+        }
         
         data.setnumItems(numItems);
         data.setDuration(durationSeconds);
-        data.setMaximumDepth(maxDepth);
+        
         double val = ((double)calculateCurrentVal(allSacks.get(0).sacks))/ targetVal;
        
         data.setSatRate(val);

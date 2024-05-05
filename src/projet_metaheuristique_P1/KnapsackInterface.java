@@ -193,6 +193,51 @@ public class KnapsackInterface extends JFrame {
             }
         });
         buttonPanel.add(runButton); // Add the runButton to the button panel
+        JButton generateGraphButton = new JButton("Generate Graph");
+        generateGraphButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Handle generating graph here
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setCurrentDirectory(new File("C:\\Users\\Asus\\eclipse-workspace\\projet_metaheuristique_P1"));
+                FileNameExtensionFilter filter = new FileNameExtensionFilter("DOT Files", "dot");
+                fileChooser.setFileFilter(filter);
+                int returnValue = fileChooser.showOpenDialog(null);
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = fileChooser.getSelectedFile();
+                    String dotFilePath = selectedFile.getAbsolutePath();
+                    String pngFile = "search_tree.pdf";
+                    GraphvizExecutor.generateGraph(dotFilePath);
+                    GraphvizExecutor.openFile(pngFile);
+                }
+            }
+        });
+        buttonPanel.add(generateGraphButton, 0); // Add the generateGraphButton to the leftmost position in the button panel
+        JButton generateCurveButton = new JButton("Generate Curve");
+        generateCurveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setCurrentDirectory(new File("C:\\Users\\Asus\\eclipse-workspace\\projet_metaheuristique_P1"));
+                FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV Files", "csv");
+                fileChooser.setFileFilter(filter);
+                fileChooser.setMultiSelectionEnabled(true); // Allow multiple file selection
+                int returnValue = fileChooser.showOpenDialog(null);
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File[] selectedFiles = fileChooser.getSelectedFiles();
+                    if (selectedFiles.length != 2) {
+                        JOptionPane.showMessageDialog(null, "Please select exactly two CSV files.", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    String csvFilePath1 = selectedFiles[0].getAbsolutePath();
+                    String csvFilePath2 = selectedFiles[1].getAbsolutePath();
+                    StatCurve.generateCurve(csvFilePath1, csvFilePath2);
+                    JOptionPane.showMessageDialog(null, "Curve generated successfully!");
+                }
+            }
+        });
+        buttonPanel.add(generateCurveButton, 0); // Add the generateCurveButton to the leftmost position in the button panel
+
 
         // Add button panel to the main frame
         add(buttonPanel, BorderLayout.SOUTH);
@@ -201,6 +246,7 @@ public class KnapsackInterface extends JFrame {
         setSize(800, 600);
         setVisible(true);
     }
+    
     private void clearResultsAndMetrics() {
         resultsArea.setText("");
         metricsArea.setText("");
@@ -215,8 +261,9 @@ public class KnapsackInterface extends JFrame {
         int maxWeight = dialog.getMaxWeight();
         int minWeight = dialog.getMinWeight();
         int maxValue = dialog.getMaxValue();
-        if (numberOfItems != -1 && maxWeight != -1 && maxValue != -1 && numberOfFiles != -1 && Incrementation != -1) {
-            CSVGenerator.generateCSV("sample",numberOfItems, maxWeight, minWeight,maxValue, numberOfFiles, Incrementation);
+        int minValue = dialog.getMinValue();
+        if (numberOfItems != -1 && maxWeight != -1 && maxValue != -1 && minValue != -1 && numberOfFiles != -1 && Incrementation != -1) {
+            CSVGenerator.generateCSV("sample",numberOfItems, maxWeight, minWeight,maxValue,minValue, numberOfFiles, Incrementation);
         }
     }
 
@@ -294,11 +341,55 @@ public class KnapsackInterface extends JFrame {
         }
       
         // Retrieve capacities
-        List<Integer> capacities = updateCapacityFields();
+        int iter, flip, bee, pop, maxiter;
+        iter = 50; flip=3; bee= 5; pop=50;maxiter = 20; 
+        double mutRate;
+        mutRate = 0.4;
+        List<Integer> capacities = new ArrayList<>();
+        if(selectedAlgorithm == "BSO") {
+        	List<Integer> param = updateCapacityFieldsBSO();
+        	
+        	for(int h=0; h<numberOfSacks; h++) {
+        		capacities.add(param.get(h));
+        	}
+        	int h = numberOfSacks;
+        	iter = param.get(h);
+        	h++;
+        	flip = param.get(h);
+        	h++;
+        	bee = param.get(h);
+        	if (capacities == null || capacities.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter capacities for all sacks.", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        	
+        }else if (selectedAlgorithm.equals("Genetic")) {
+            List<Hybrid> param = updateCapacityFieldsGA();
+            
+             // Assuming the last 3 elements are for population size, iterations, and mutation rate
+            for (int l = 0; l < numberOfSacks; l++) {
+                int capa = (int) param.get(l).getValue(0); // Cast the value to int
+                capacities.add(capa);
+            }
+            int l = numberOfSacks;
+            pop = (int) param.get(l).getValue(0); // Cast the value to int
+            l++;
+            maxiter = (int) param.get(l).getValue(0); // Cast the value to int
+            l++;
+            mutRate = (double) param.get(l).getValue(0); // Cast the value to double
+            if (capacities == null || capacities.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter capacities for all sacks.", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }else if(selectedAlgorithm=="DFS"||selectedAlgorithm=="BSF"||selectedAlgorithm=="A*"){
+        
+        	capacities = updateCapacityFields();
         if (capacities == null || capacities.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter capacities for all sacks.", "Warning", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        }
+        
 
         // Call the appropriate algorithm method
         
@@ -308,6 +399,11 @@ public class KnapsackInterface extends JFrame {
             	DataSaved data = new DataSaved();
             	Graph graph1 = new SingleGraph("Search Tree");
             	
+            	resultsArea.append("DFS Algorithm Results(All Nodes):\n\n");
+            	metricsArea.append("***************************************************** "+"\n");
+            	for(int k=0; k < capacities.size(); k++) {
+            		metricsArea.append("sacks N°: "+ (k+1) +  " capacity: "+ capacities.get(k) + "\n");
+            	}
             	
 			// Call the dfs algorithm method
             	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
@@ -321,7 +417,7 @@ public class KnapsackInterface extends JFrame {
             	    for (int i = 0; i < weightsFromFile.size(); i++) {
             	        items.add(new MultipleKnapsack.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
             	    }
-            	   
+            	    ItemsDisplay.displayItems(items, metricsArea, fileIndex);
             	   data = MultipleKnapsack.dfs(capacities, items, resultsArea, metricsArea, maxDepth, graph1);
             	   //if(fileIndex !=0) {
             	   DataSaved.saveDataToCSV(data, "DFSData.csv");
@@ -329,7 +425,7 @@ public class KnapsackInterface extends JFrame {
             	   
             	}
             	data.saveToCSV("DFSData.csv", "DFSMetrics.csv");
-            	StatCurve.generateCurve("DFSData.csv", "DFSMetrics.csv");
+            	//StatCurve.generateCurve("DFSData.csv", "DFSMetrics.csv");
             	
             	
             	
@@ -339,6 +435,8 @@ public class KnapsackInterface extends JFrame {
                 
                 //graph1.setAutoCreate(true);
                 //displayGraph(graph1);
+            	allWeightsFromFile.clear();
+            	allValuesFromFile.clear();
                 
                 break;
             case "BFS":
@@ -346,6 +444,11 @@ public class KnapsackInterface extends JFrame {
             	Graph graph2 = new SingleGraph("Search Tree");
             	// Call the dfs algorithm method
             	resultsArea.append("BFS Algorithm Results(All Nodes):\n\n");
+            	metricsArea.append("***************************************************** "+"\n");
+            	metricsArea.append("sacks capacities: \n");
+            	for(int k=0; k < capacities.size(); k++) {
+            		metricsArea.append("sacks N°: "+ (k+1) +  " capacity: "+ capacities.get(k) + "\n");
+            	}
             	
             	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
             	    List<Integer> weightsFromFile = allWeightsFromFile.get(fileIndex);
@@ -358,6 +461,7 @@ public class KnapsackInterface extends JFrame {
             	    for (int i = 0; i < weightsFromFile.size(); i++) {
             	        itemsBFS.add(new MultipleKnapsackBFS.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
             	    }
+            	    ItemsDisplay.displayItemsBFS(itemsBFS, metricsArea, fileIndex);
             	   dataDFS = MultipleKnapsackBFS.bfs(capacities, itemsBFS, resultsArea, metricsArea, maxDepth, graph2);
              	   DataSaved.saveDataToCSV(dataDFS, "BFSData.csv");
              	   dataDFS.saveToCSV("BFSData.csv", "BFSmetrics.csv");
@@ -370,6 +474,8 @@ public class KnapsackInterface extends JFrame {
                 
                 graph2.setAutoCreate(true);
                 //displayGraph(graph2);
+                allWeightsFromFile.clear();
+                allValuesFromFile.clear();
                 
                 break;
             case "A*":
@@ -377,6 +483,10 @@ public class KnapsackInterface extends JFrame {
             	DataSaved dataASTAR = new DataSaved();
             	Graph graph3 = new SingleGraph("Search Tree");
             	resultsArea.append("ASTAR Algorithm Results(All Nodes):\n\n");
+            	metricsArea.append("***************************************************** "+"\n");
+            	for(int k=0; k < capacities.size(); k++) {
+            		metricsArea.append("sacks N°: "+ (k+1) +  " capacity: "+ capacities.get(k) + "\n");
+            	}
             	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
             	    List<Integer> weightsFromFile = allWeightsFromFile.get(fileIndex);
             	    
@@ -388,12 +498,15 @@ public class KnapsackInterface extends JFrame {
             	    for (int i = 0; i < weightsFromFile.size(); i++) {
             	    	itemsASTAR.add(new AStarAlgo.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
             	    }
+            	   ItemsDisplay.displayItemsASTAR(itemsASTAR, metricsArea , fileIndex);
             	   dataASTAR = AStarAlgo.aStar(capacities, itemsASTAR, resultsArea, metricsArea, maxDepth, graph3);
              	   DataSaved.saveDataToCSV(dataASTAR, "ASTARData.csv");
              	  dataASTAR.saveToCSV("ASTARData.csv", "ASTARmetrics.csv");
              	}                
                 graph3.setAutoCreate(true);
                 //displayGraph(graph3);
+                allWeightsFromFile.clear();
+                allValuesFromFile.clear();
                 break;
             case "Genetic":
             	System.out.println("****Genetic algorithm testing****");
@@ -412,29 +525,111 @@ public class KnapsackInterface extends JFrame {
             	        itemsGA.add(new BasePopulation.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
             	    }
             	   
-            	   GeneticAlgo.generatePopulation(capacities, itemsGA, 30);
-             	   
+            	   DataSavedMeta dataGA = GeneticAlgo.activateGeneticAlgorithm(capacities, itemsGA, pop, maxiter, mutRate, resultsArea, metricsArea);
+            	   DataSavedMeta.saveDataToCSV(dataGA, "GAData.csv");
              	}
             	
             	break;
+            case "BSO":
+            	
+            	for (int fileIndex = 0; fileIndex < allWeightsFromFile.size(); fileIndex++) {
+            	    List<Integer> weightsFromFile = allWeightsFromFile.get(fileIndex);
+            	    
+            	    List<Integer> valuesFromFile = allValuesFromFile.get(fileIndex);
+            	    
+            	    List<BeeSwarmOptimizationMKP.Item> itemsBSO = new ArrayList<>();
+
+            	    // Iterate over the data of the current file and add items
+            	    for (int i = 0; i < weightsFromFile.size(); i++) {
+            	    	itemsBSO.add(new BeeSwarmOptimizationMKP.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+            	    }
+            	   
+            	    DataSavedMeta dataBSO = BeeSwarmOptimizationMKP.launchBSO(capacities, itemsBSO, iter, flip, bee, resultsArea, metricsArea);
+            	    DataSavedMeta.saveDataToCSV(dataBSO, "BSOData.csv");
+             	}
+            	
                 
         }
 
         // Update metrics (if any)
         // metricsArea.setText("Metrics: ...");
     }
+   
+
+    public class Hybrid {
+        private List<Object> values;
+
+        public Hybrid() {
+            this.values = new ArrayList<>();
+        }
+
+        public void addValue(Object value) {
+            values.add(value);
+        }
+
+        public Object getValue(int index) {
+            return values.get(index);
+        }
+    }
+
 
     private List<Integer> updateCapacityFields() {
         // Update the number of capacity fields based on the selected number of sacks
         int numberOfSacks = Integer.parseInt(numberOfSacksField.getText());
+        
+       
+        	
+        	
+       
         CapacityInputDialog dialog = new CapacityInputDialog(this, numberOfSacks);
         dialog.setVisible(true); // Display the dialog window
         List<Integer> capacities = dialog.getCapacities();
-        
-        // Use the capacities obtained from the dialog
-        
         return capacities;
-    }
+        }
+        
+        private List<Integer> updateCapacityFieldsBSO(){
+        	int numberOfSacks = Integer.parseInt(numberOfSacksField.getText());
+        	CapacityInputDialogBSO dialogBSO = new CapacityInputDialogBSO(this, numberOfSacks);
+            dialogBSO.setVisible(true); // Display the dialog window
+            List<Integer> paramBSO = dialogBSO.getCapacities();
+            paramBSO.add(dialogBSO.getMaxIteration());
+            paramBSO.add(dialogBSO.getNumberOfBees());
+            paramBSO.add(dialogBSO.getFlip());
+            return paramBSO;
+        
+        }
+        private List<Hybrid> updateCapacityFieldsGA(){
+        	int numberOfSacks = Integer.parseInt(numberOfSacksField.getText());
+        	// Use the capacities obtained from the dialog
+            CapacityInputDialogGA dialogGA = new CapacityInputDialogGA(this, numberOfSacks);
+            dialogGA.setVisible(true); // Display the dialog window
+            List<Hybrid> paramGA = new ArrayList<>();
+            for (int capacity : dialogGA.getCapacities()) {
+                Hybrid hybrid = new Hybrid();
+                hybrid.addValue(capacity);
+                paramGA.add(hybrid);
+            }
+
+            // Add population size
+            Hybrid hybridPopSize = new Hybrid();
+            hybridPopSize.addValue(dialogGA.getPopulationSize());
+            paramGA.add(hybridPopSize);
+
+            // Add iterations
+            Hybrid hybridIterations = new Hybrid();
+            hybridIterations.addValue(dialogGA.getIterations());
+            paramGA.add(hybridIterations);
+
+            // Add mutation rate
+            Hybrid hybridMutationRate = new Hybrid();
+            hybridMutationRate.addValue(dialogGA.getMutationRate());
+            paramGA.add(hybridMutationRate);
+
+            return paramGA;
+        }
+        
+        
+    
     private static void displayGraph(Graph graph) {
         // Set the layout algorithm to a tree layout algorithm
         graph.setAttribute("layout.algorithm", "tree");
@@ -457,6 +652,7 @@ public class KnapsackInterface extends JFrame {
         // Make the frame visible
         frame.setVisible(true);
     }
+    
 
     
 
