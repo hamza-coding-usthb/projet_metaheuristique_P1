@@ -3,11 +3,12 @@ package projet_metaheuristique_P1;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
-
+import projet_metaheuristique_P1.AStarAlgo.Item;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import javax.swing.JTextArea;
@@ -20,7 +21,7 @@ public class AStarAlgo {
 	
 	
 
-	static class Item {
+	 public static class Item {
 	    static int itemCount = 0; // Static counter to generate unique identifiers
 	    int id;
 	    int weight;
@@ -51,21 +52,26 @@ public class AStarAlgo {
 	    }
 	}
 
-	static class State {
+	 public static class State {
 		static int stateCount = 0;
         List<List<Item>> sacks;
         int id;
+        List<Item> allitems;
         int totalWeight;
+        double ech;
         int itemIndex;
         int nodeNumber;
+        int addedItem = -1;
+        int sackFilled;
         boolean visited;
         Duration visitDuration; // Add timestamp field
         List<State> children; // Add a list to hold child states
 
-        public State(List<List<Item>> sacks, int totalWeight, int itemIndex) {
+        public State(List<List<Item>> sacks, int totalWeight, int itemIndex, List<Item> allitems) {
             this.sacks = sacks;
             this.id = stateCount++;
             this.totalWeight = totalWeight;
+            this.allitems = allitems;
             this.itemIndex = itemIndex;
             this.children = new ArrayList<>(); // Initialize the list
             this.visited = false;
@@ -91,6 +97,24 @@ public class AStarAlgo {
         }
         public int getId() {
             return id;
+        }
+        public void seth(double eich) {
+            this.ech = eich;
+        }
+        public void setSackF(int a) {
+            this.sackFilled = a;
+        }
+        public int getSackF() {
+            return this.sackFilled;
+        }
+        public int getAddedItem() {
+            return this.addedItem;
+        }
+        public void setAddedItem(int i) {
+            this.addedItem= i;
+        }
+        public double geth() {
+            return this.ech;
         }
         public int getNodeNumber() {
             return nodeNumber;
@@ -136,6 +160,41 @@ public class AStarAlgo {
             }
             return sb.toString();
         }
+
+		public List<Integer> getRemainingCapacities() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		public List<Integer> getRemainingCapacities(List<Integer> capacities) {
+	        List<Integer> remainingCapacities = new ArrayList<>();
+	        for (int i = 0; i < sacks.size(); i++) {
+	            int remainingCapacity = capacities.get(i) - calculateSackWeight(sacks.get(i));
+	            remainingCapacities.add(remainingCapacity);
+	        }
+	        return remainingCapacities;
+	    }
+		public List<Item> getRemainingItems(List<Item> it) {
+			List<List<Item>> sackContents = this.getSacks();
+	        List<Item> stateItems = new ArrayList<>();
+	        for(List<Item> sack: sackContents) {
+	        	for(Item item: sack) {
+	        		stateItems.add(item);
+	        	}
+	        }
+	        List<Item> remainingItems = new ArrayList<>(allitems);
+	        remainingItems.removeAll(stateItems);
+	        return remainingItems;
+	    }
+		
+
+	    // Helper method to calculate the weight of items in a sack
+	    private int calculateSackWeight(List<Item> sack) {
+	        int totalWeight = 0;
+	        for (Item item : sack) {
+	            totalWeight += item.getWeight();
+	        }
+	        return totalWeight;
+	    }
     }
 
     public static DataSaved aStar(List<Integer> capacities, List<Item> items, JTextArea resultsArea, JTextArea metricsArea, int maximumDepth, Graph graph) {
@@ -162,51 +221,62 @@ public class AStarAlgo {
         for (int i = 0; i < numSacks; i++) {
             initialSacks.add(new ArrayList<>());
         }
-        State initialState = new State(initialSacks, 0, 0);
+        State initialState = new State(initialSacks, 0, 0, items);
+        
+        
+        
+      
 
         PriorityQueue<State> priorityQueue = new PriorityQueue<>(
         	    (node1, node2) -> {
-        	        double f1 = AStarHeuristic.g(node1) + AStarHeuristic.h(node1, items.subList(node1.itemIndex, items.size()), capacities);
-        	        double f2 = AStarHeuristic.g(node2) + AStarHeuristic.h(node2, items.subList(node2.itemIndex, items.size()), capacities);
-        	        return Double.compare(f2, f1); // Compare f1 to f2 to order elements in ascending order
+        	        double f1 = AStarHeuristic.g(node1, items) + AStarHeuristic.h(node1,  capacities, items);
+        	        double f2 = AStarHeuristic.g(node2, items) + AStarHeuristic.h(node2, capacities, items);
+        	        return Double.compare(f2, f1); // Compare f1 to f2 to order elements in descending order
         	    }
         	);
         priorityQueue.offer(initialState);
         
-
+        double eff = AStarHeuristic.h(initialState, capacities, items) + AStarHeuristic.g(initialState, items);
+        
         int j = 0;
         int maxDepth = 0;
         List<State> allSacks = new ArrayList<>();
+        initialState.setNodeNumber(0);
         List<State> allStates = new ArrayList<>();
-        
       
+       
         long startTime = System.currentTimeMillis(); //measure time begins
         Instant startingTime = Instant.now();
-        
-        while (!priorityQueue.isEmpty()) {
+    
+
+        while (!priorityQueue.isEmpty() && j<20000) {
             State state = priorityQueue.poll();
+            double Stateff = AStarHeuristic.h(state, capacities, items) + AStarHeuristic.g(state, items);
             state.setNodeNumber(j);
+            int nodeJ = j;
+            
+          
+            
             
             Instant stateStartTime = Instant.now();
             
             // Calculate visit duration for state
             Duration visitDuration = Duration.between(startingTime, stateStartTime);
             
+            
             state.setVisitDuration(visitDuration); // Set visit duration
             
-            allStates.add(state);            
-          
-            double ach = AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities);
-            /*
-            System.out.println("g"+ AStarHeuristic.g(state));
-            double f = AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities) +  AStarHeuristic.g(state);
-            System.out.println("f"+ f);
             
-            */
             
-            if(ach == 0.0) {
-            	break;
-            }
+            
+           
+            
+            
+            System.out.println("f"+ Stateff);
+            
+            
+            
+            
             List<List<Item>> sacks = state.sacks;
             int totalWeight = state.totalWeight;
             int itemIndex = state.itemIndex;
@@ -226,7 +296,7 @@ public class AStarAlgo {
             	continue;
             }
 
-            
+
 
             int totalValue = 0;
            
@@ -242,15 +312,13 @@ public class AStarAlgo {
                 }
                 resultsArea.append("Total Value: " + totalValue + "\n\n");
             }
-            state.nodeNumber = j;
-            state.setVisited(true);
             
+            state.setNodeNumber(j);
+            state.setVisited(true);
+           
             j++;
             
-            State newSack = new State(sacks, totalWeight, itemIndex);
-            newSack.setVisitDuration(visitDuration);
-            newSack.setNodeNumber(j);
-            allSacks.add(newSack);
+            
             
             if(targetValueReached) {
             	data.setSatisfiable(true);
@@ -278,37 +346,63 @@ public class AStarAlgo {
                 }
             
 
-
+                for (int i = 0; i < numSacks; i++) {
+            for(int k = 0; k< items.size(); k++) {
             
-            for (int i = 0; i < numSacks; i++) {
             	
             	 List<List<Item>> parentSacks = copySacks(sacks);
                  totalWeight = state.totalWeight;
                  
             	
-                if (canFit(capacities.get(i), parentSacks.get(i), items.get(itemIndex)) /*&& !state.containsItem(itemIndex)*/) {
+                if (canFit(capacities.get(i), parentSacks.get(i), items.get(k))  && !state.containsItem(items.get(k).getId())) {
                     List<List<Item>> newSacks = copySacks(sacks);
-                    newSacks.get(i).add(items.get(itemIndex));
-                    totalWeight += items.get(itemIndex).weight;
-                    State newState = new State(newSacks, totalWeight, itemIndex + 1);
-                    //if(!isSimilarState(newState, allSacks)) {
+                    newSacks.get(i).add(items.get(k));
+                    totalWeight += items.get(k).weight;
+                    State newState = new State(newSacks, totalWeight, k, items);
+                    if(!isSimilarState(newState, allSacks)) {
                         state.addChild(newState);
+                        double ach = AStarHeuristic.h(state,  capacities, items);
+                       
+                        newState.seth(ach);
+                        newState.setSackF(i);
+                        newState.setNodeNumber(nodeJ);                       
+                        newState.setAddedItem(k);
+                        
                         priorityQueue.offer(newState);
-                       // }
+                        }
                    
              
                 }
+            }
             
 
            
         }
+            /*
             if(itemIndex <= items.size()) {
             	List<List<Item>> parentSacks = copySacks(sacks);
             	int parentWeight = state.totalWeight;
             	State ParentalState = new State(parentSacks, parentWeight, itemIndex + 1);
             	state.addChild(ParentalState);
+            	allStates.add(ParentalState);
+            	double ach = AStarHeuristic.h(state, items.subList(state.itemIndex, items.size()), capacities);
+                System.out.println(ach);
+            	ParentalState.setSackF(-1);
+            	ParentalState.seth(ach);
             	priorityQueue.offer(ParentalState);
+            	
         	}
+        	*/
+                allSacks.add(state);
+                allStates.add(state);
+                double ach = AStarHeuristic.h(state, capacities, items);
+                
+               
+               
+                
+                // Create a new list to store sorted items
+                
+            
             
             
         }
@@ -324,19 +418,20 @@ public class AStarAlgo {
 
         
      // Build the graph based on the parent-child relationships
+        /*
         for (State parentState : allStates) {
             for (State childState : parentState.getChildren()) {    	
                 // Add nodes if they don't exist already
                 if (graph.getNode("Node_" + parentState.getId()) == null) {
                     Node parentNode = graph.addNode("Node_" + parentState.getId());
                     // Set the label for the parent node with the total value
-                    parentNode.setAttribute("label", "Depth: " + parentState.itemIndex + "\nTotal Value: " + parentState.getTotalValue());
+                    parentNode.setAttribute("label", "h: " + parentState.geth() + "\nTotal Value: " + parentState.getTotalValue());
                 }
                 if(childState.getVisited()) {
                 if (graph.getNode("Node_" + childState.getId()) == null) {
                     Node childNode = graph.addNode("Node_" + childState.getId());
                     // Set the label for the child node with the total value
-                    childNode.setAttribute("label", "Depth: " + childState.itemIndex + "\nTotal Value: " + childState.getTotalValue());
+                    childNode.setAttribute("label", "h: " + childState.geth() + "\nTotal Value: " + childState.getTotalValue());
                 }
             }
                 if(childState.getVisited()) {
@@ -349,7 +444,7 @@ public class AStarAlgo {
         }
         graph.setAttribute("layout.algorithm", "tree");
         
-       
+       */
     		resultsArea.append("Best result possible: \n");
     		bestState(allSacks, resultsArea);
     	

@@ -381,7 +381,7 @@ public class KnapsackInterface extends JFrame {
                 JOptionPane.showMessageDialog(this, "Please enter capacities for all sacks.", "Warning", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-        }else if(selectedAlgorithm=="DFS"||selectedAlgorithm=="BSF"||selectedAlgorithm=="A*"){
+        }else if( selectedAlgorithm=="DFS"||selectedAlgorithm=="BFS"||selectedAlgorithm=="A*"){
         
         	capacities = updateCapacityFields();
         if (capacities == null || capacities.isEmpty()) {
@@ -394,6 +394,7 @@ public class KnapsackInterface extends JFrame {
         // Call the appropriate algorithm method
         
         switch (selectedAlgorithm) {
+        
             case "DFS":
             	 
             	DataSaved data = new DataSaved();
@@ -537,14 +538,14 @@ public class KnapsackInterface extends JFrame {
             	    
             	    List<Integer> valuesFromFile = allValuesFromFile.get(fileIndex);
             	    
-            	    List<BeeSwarmOptimizationMKP.Item> itemsBSO = new ArrayList<>();
+            	    List<BeeSwarmOptimizationMKP2.Item> itemsBSO = new ArrayList<>();
 
             	    // Iterate over the data of the current file and add items
             	    for (int i = 0; i < weightsFromFile.size(); i++) {
-            	    	itemsBSO.add(new BeeSwarmOptimizationMKP.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
+            	    	itemsBSO.add(new BeeSwarmOptimizationMKP2.Item(weightsFromFile.get(i), valuesFromFile.get(i)));
             	    }
             	   
-            	    DataSavedMeta dataBSO = BeeSwarmOptimizationMKP.launchBSO(capacities, itemsBSO, iter, flip, bee, resultsArea, metricsArea);
+            	    DataSavedMeta dataBSO = BeeSwarmOptimizationMKP2.launchBSO(capacities, itemsBSO, iter, flip, bee, resultsArea, metricsArea);
             	    DataSavedMeta.saveDataToCSV(dataBSO, "BSOData.csv");
              	}
             	
@@ -640,14 +641,14 @@ public class KnapsackInterface extends JFrame {
         frame.setSize(800, 600);
 
         // Create a Viewer for the graph
-        Viewer viewer = new Viewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
-        View view = viewer.addDefaultView(false);
+       // Viewer viewer = new Viewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
+       //View view = viewer.addDefaultView(false);
         
         // Add the view to the frame
-        frame.getContentPane().add((Component) view);
+        //frame.getContentPane().add((Component) view);
 
         // Enable auto layout
-        viewer.enableAutoLayout();
+       // viewer.enableAutoLayout();
 
         // Make the frame visible
         frame.setVisible(true);

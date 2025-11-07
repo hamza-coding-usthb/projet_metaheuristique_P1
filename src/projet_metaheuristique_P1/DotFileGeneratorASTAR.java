@@ -17,7 +17,7 @@ public class DotFileGeneratorASTAR {
                 int j = state.getNodeNumber(); // Assuming getNodeNumber() returns the node number
                 writer.write("  Node_" + state.getId() + " [label=\"" +
                         "Node Number: " + j + "\\n" +
-                        "Depth: " + state.itemIndex + "\\n" +
+                        "h: " + state.geth() + "\\n" +
                         "Total Value: " + state.getTotalValue() + "\\n" +
                         "Items: " + state.getItemsAsString() + "\"];\n");
 

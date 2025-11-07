@@ -53,7 +53,7 @@ public class HeuristicBIS {
 
 	    // Add getters for totalValue, totalWeight, and capacity if needed
 	}
-
+	
 
 	public static double g(State state) {
 	    double totalValue = 0;
@@ -68,48 +68,62 @@ public class HeuristicBIS {
 	    return totalValue;
 	}
 
-	public static double h(State state, List<Item> items, List<Integer> capacities) {
-	    double remainingValue = 0;
-	    for (Item item : items) {
-	        remainingValue += item.getValue();
-	    }
+	
+	public static int h(State state, List<Item> items, List<Integer> capacities) {
+	    List<Item> remainingItems = new ArrayList<>(items); // Create a copy of the items list
 
-	    int remainingCapacity = 0;
-	    for (int capacity : capacities) {
-	        remainingCapacity += capacity;
+	    // Remove items already present in sacks
+	    for (List<Item> sackContent : state.getSacks()) {
+	        remainingItems.removeAll(sackContent);
 	    }
+	    
 
-	    double maxValue = 0;
-	    List<Item> sortedItems = sortItemsByValue(items);
-	    List<List<Item>> sackContents = state.getSacks(); // Retrieve the sacks from the State object
-	    for (int i = 0; i < sackContents.size(); i++) {
-	        int sackCapacity = capacities.get(i);
-	        int remainingSpace = sackCapacity - sackContents.get(i).stream().mapToInt(Item::getWeight).sum();
-	        for (int j = 0; j < sortedItems.size(); j++) {
-	            Item item = sortedItems.get(j);
-	            if (item.getWeight() <= remainingSpace) {
-	                maxValue += item.getValue();
-	                remainingSpace -= item.getWeight();
-	            } else {
-	                double fraction = (double) remainingSpace / item.getWeight();
-	                maxValue += fraction * item.getValue();
+	    // Sort remaining items by density in descending order
+	    Collections.sort(remainingItems, new DensityComparator());
+
+	    int totalValue = 0;
+
+	    for (Item item : remainingItems) {
+	        boolean packed = false;
+	        for (List<Item> sackContent : state.getSacks()) {
+	            int remainingCapacity = calculateRemainingCapacity(sackContent, state.getRemainingCapacities());
+	            if (item.getWeight() <= remainingCapacity) {
+	                sackContent.add(item);
+	                totalValue += item.getValue();
+	                packed = true;
 	                break;
 	            }
 	        }
+	        if (!packed) {
+	            break; // No more items can be packed
+	        }
 	    }
 
-	    return Math.max(remainingValue, maxValue);
+	    return totalValue;
 	}
 
 
-	private static List<Item> sortItemsByValue(List<Item> items) {
-	    List<Item> sortedItems = new ArrayList<>(items);
-	    sortedItems.sort(Comparator.comparingInt(Item::getValue).reversed());
-	    return sortedItems;
-	}
+    private static int calculateRemainingCapacity(List<Item> sackContent, int capacity) {
+        int totalWeight = 0;
+        for (Item item : sackContent) {
+            totalWeight += item.getWeight();
+        }
+        return capacity - totalWeight;
+    }
 
-
-
+    private static int calculateRemainingCapacity(List<Item> sackContent, List<Integer> remainingCapacities) {
+        int totalWeight = 0;
+        for (Item item : sackContent) {
+            totalWeight += item.getWeight();
+        }
+        // Assuming the remaining capacities list corresponds to the capacities of the sacks
+        return remainingCapacities.get(0) - totalWeight; // Adjust index if needed
+    }
     
+    
+   
+
+
+	
 }
 

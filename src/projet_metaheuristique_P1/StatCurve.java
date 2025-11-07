@@ -17,7 +17,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import org.jfree.chart.annotations.XYTextAnnotation;
-import org.jfree.ui.TextAnchor;
+import org.jfree.chart.ui.TextAnchor;
 import org.jfree.chart.ChartUtils;
 
 

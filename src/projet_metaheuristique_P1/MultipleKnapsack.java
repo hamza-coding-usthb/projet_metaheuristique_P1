@@ -180,7 +180,7 @@ public class MultipleKnapsack {
         Instant startingTime = Instant.now();
         
         //Beginning of dfs loop
-        while (!stack.isEmpty() && j<=65000) {
+        while (!stack.isEmpty()) {
             State state = stack.pop();
            
             
@@ -287,16 +287,16 @@ public class MultipleKnapsack {
                 List<List<Item>> parentSacks = copySacks(sacks);
                 totalWeight = state.totalWeight;             	
                 	
-                    if (canFit(capacities.get(i), parentSacks.get(i), items.get(itemIndex)) && !state.containsItem(itemIndex)) {
+                    if (canFit(capacities.get(i), parentSacks.get(i), items.get(itemIndex))) {
                     	List<List<Item>> newSacks = copySacks(sacks);
                         newSacks.get(i).add(items.get(itemIndex));
                         totalWeight += items.get(itemIndex).weight;
                         
                         State childState = new State(newSacks, totalWeight, itemIndex + 1);
-                       if(!isSimilarState(childState, allSacks)) {
+                      
                         state.addChild(childState);
                         stack.push(childState);
-                        }
+                        
                     }
                     
                 
